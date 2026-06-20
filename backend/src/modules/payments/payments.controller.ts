@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, JwtUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Payments')
@@ -55,7 +56,27 @@ export class PaymentsController {
     return this.paymentsService.confirmPayment(id, ref);
   }
 
+  @Patch(':id/status')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update payment status' })
+  updateStatus(@Param('id') id: string, @Body('status') status: any, @Body('notes') notes?: string) {
+    return this.paymentsService.updateStatus(id, status, notes);
+  }
+
   @Post(':id/chapa')
   @ApiOperation({ summary: 'Initiate Chapa payment' })
   initiateChapa(@Param('id') id: string) { return this.paymentsService.initiateChapa(id); }
+
+  @Get('verify/:txRef')
+  @ApiOperation({ summary: 'Verify Chapa payment' })
+  verifyChapaPayment(@Param('txRef') txRef: string) {
+    return this.paymentsService.verifyChapaPayment(txRef);
+  }
+
+  @Public()
+  @Post('webhook/chapa')
+  @ApiOperation({ summary: 'Chapa webhook callback' })
+  handleChapaWebhook(@Body() body: any) {
+    return this.paymentsService.handleChapaWebhook(body);
+  }
 }
