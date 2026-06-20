@@ -15,14 +15,14 @@ export class AdminGalleryComponent {
     columns: [
       { key: 'title', label: 'Title' },
       { key: 'category', label: 'Category' },
+      { key: 'coverImage', label: 'Cover', type: 'image' },
       { key: 'media', path: '_count.media', label: 'Media' },
     ],
     fields: [
       { key: 'title', label: 'Title', required: true },
       { key: 'category', label: 'Category' },
       { key: 'description', label: 'Description', type: 'textarea' },
-      { key: 'coverImage', label: 'Cover Image URL' },
+      { key: 'coverImage', label: 'Cover Image', type: 'image' },
     ],
-    canEdit: false,
   };
 }

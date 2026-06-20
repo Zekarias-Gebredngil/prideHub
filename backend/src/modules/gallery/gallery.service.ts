@@ -2,14 +2,73 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import slugify from 'slugify';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
+
+export class CreateGalleryAlbumDto {
+  @IsString()
+  @MaxLength(200)
+  title: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  coverImage?: string;
+}
+
+export class AddGalleryMediaDto {
+  @IsString()
+  @MaxLength(500)
+  url: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  thumbUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  type?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  altText?: string;
+}
 
 @Injectable()
 export class GalleryService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createAlbum(dto: { title: string; description?: string; category?: string; coverImage?: string }) {
+  async createAlbum(dto: CreateGalleryAlbumDto) {
     return this.prisma.galleryAlbum.create({
       data: { ...dto, slug: slugify(dto.title, { lower: true }) + '-' + Date.now().toString(36) },
+    });
+  }
+
+  async updateAlbum(id: string, dto: Partial<CreateGalleryAlbumDto>) {
+    const album = await this.prisma.galleryAlbum.findUnique({ where: { id } });
+    if (!album) throw new NotFoundException('Album not found');
+    return this.prisma.galleryAlbum.update({
+      where: { id },
+      data: {
+        ...dto,
+        ...(dto.title && { slug: slugify(dto.title, { lower: true }) + '-' + Date.now().toString(36) }),
+      },
     });
   }
 
@@ -37,7 +96,7 @@ export class GalleryService {
     return album;
   }
 
-  async addMedia(albumId: string, dto: { url: string; thumbUrl?: string; title?: string; type?: string; altText?: string }) {
+  async addMedia(albumId: string, dto: AddGalleryMediaDto) {
     const album = await this.prisma.galleryAlbum.findUnique({ where: { id: albumId } });
     if (!album) throw new NotFoundException('Album not found');
     return this.prisma.media.create({

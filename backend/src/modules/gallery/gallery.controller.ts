@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { GalleryService } from './gallery.service';
+import { AddGalleryMediaDto, CreateGalleryAlbumDto, GalleryService } from './gallery.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -30,15 +30,23 @@ export class GalleryController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @Post('albums')
-  createAlbum(@Body() dto: { title: string; description?: string; category?: string }) {
+  createAlbum(@Body() dto: CreateGalleryAlbumDto) {
     return this.galleryService.createAlbum(dto);
   }
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Patch('albums/:id')
+  updateAlbum(@Param('id') id: string, @Body() dto: Partial<CreateGalleryAlbumDto>) {
+    return this.galleryService.updateAlbum(id, dto);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @Post('albums/:id/media')
-  addMedia(@Param('id') id: string, @Body() dto: { url: string; title?: string; type?: string }) {
+  addMedia(@Param('id') id: string, @Body() dto: AddGalleryMediaDto) {
     return this.galleryService.addMedia(id, dto);
   }
 

@@ -8,7 +8,7 @@ import { GalleryAlbum, Media } from '../../../core/models/content.model';
 @Component({
   selector: 'app-gallery',
   standalone: true,
-  imports: [CommonModule, RouterLink, SkeletonLoaderComponent],
+  imports: [CommonModule],
   template: `
     <section class="pt-32 pb-16" style="background:linear-gradient(135deg,#8B1538,#2B2B2B);">
       <div class="container mx-auto px-4 text-center">
@@ -50,7 +50,10 @@ import { GalleryAlbum, Media } from '../../../core/models/content.model';
               <div class="group cursor-pointer rounded-2xl overflow-hidden shadow-sm hover:shadow-luxury transition-all duration-300 hover:-translate-y-1 border border-gray-100"
                    (click)="openAlbum(album)">
                 <div class="relative h-56 bg-gradient-to-br from-primary/10 to-secondary/10 overflow-hidden">
-                  @if (album.media && album.media[0]) {
+                  @if (album.coverImage) {
+                    <img [src]="api.baseUrl.replace('/api/v1', '') + album.coverImage" [alt]="album.title"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                  } @else if (album.media && album.media[0]) {
                     <img [src]="album.media[0].url" [alt]="album.title"
                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                   } @else {
@@ -145,7 +148,7 @@ import { GalleryAlbum, Media } from '../../../core/models/content.model';
   `,
 })
 export class GalleryComponent implements OnInit {
-  private readonly api = inject(ApiService);
+  readonly api = inject(ApiService);
 
   readonly albums = signal<GalleryAlbum[]>([]);
   readonly loading = signal(true);
