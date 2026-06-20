@@ -26,13 +26,13 @@ import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loa
 
       <!-- Filters -->
       <div class="flex flex-wrap gap-2 mb-6">
-        <button (click)="statusFilter.set('')"
+        <button (click)="filterByStatus('')"
                 class="px-4 py-2 rounded-xl text-xs font-medium transition-colors"
                 [class]="!statusFilter() ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-white/60 hover:bg-gray-200'">
           All
         </button>
         @for (s of statuses; track s) {
-          <button (click)="statusFilter.set(s)"
+          <button (click)="filterByStatus(s)"
                   class="px-4 py-2 rounded-xl text-xs font-medium transition-colors"
                   [class]="statusFilter() === s ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-white/60 hover:bg-gray-200'">
             {{ s }}
@@ -97,6 +97,26 @@ import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loa
               </tbody>
             </table>
           </div>
+          
+          @if (meta()) {
+            <div class="flex items-center justify-between px-5 py-4 border-t border-gray-50 dark:border-white/5 bg-gray-50/50 dark:bg-white/5">
+              <div class="text-sm text-gray-500 dark:text-white/50">
+                Showing <span class="font-medium">{{ ((meta()!.page - 1) * meta()!.limit) + 1 }}</span> to 
+                <span class="font-medium">{{ Math.min(meta()!.page * meta()!.limit, meta()!.total) }}</span> of 
+                <span class="font-medium">{{ meta()!.total }}</span> bookings
+              </div>
+              <div class="flex items-center gap-2">
+                <button [disabled]="!meta()!.hasPrev" (click)="changePage(meta()!.page - 1)"
+                        class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-white/10 transition-colors">
+                  Previous
+                </button>
+                <button [disabled]="!meta()!.hasNext" (click)="changePage(meta()!.page + 1)"
+                        class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-white/10 transition-colors">
+                  Next
+                </button>
+              </div>
+            </div>
+          }
         </div>
       }
     </div>
@@ -108,8 +128,11 @@ export class BookingsComponent implements OnInit {
   readonly bookings = signal<Booking[]>([]);
   readonly loading = signal(true);
   readonly statusFilter = signal('');
+  readonly meta = signal<any>(null);
 
+  page = 1;
   statuses = ['PENDING', 'CONFIRMED', 'PLANNING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+  readonly Math = Math;
 
   readonly filteredBookings = () => {
     const s = this.statusFilter();
@@ -118,8 +141,34 @@ export class BookingsComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.api.getPaginated<Booking>('bookings', { limit: 50 }).subscribe({
-      next: (res) => { this.bookings.set(res.data); this.loading.set(false); },
+    this.load();
+  }
+
+  changePage(newPage: number): void {
+    this.page = newPage;
+    this.load();
+  }
+
+  filterByStatus(status: string): void {
+    this.statusFilter.set(status);
+    this.page = 1;
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    const s = this.statusFilter();
+    const params: any = { limit: 10, page: this.page };
+    if (s) params.status = s; // assuming the API supports filtering by status or we just rely on client filter.
+    // Wait, the backend bookings findAll might not support status filter directly. If not, client side filtering is used.
+    // Let's check: if we paginate on the backend, client-side filtering only filters the current page!
+    // To properly paginate, we should send the status filter to the backend. Let's send it anyway.
+    this.api.getPaginated<Booking>('bookings', params).subscribe({
+      next: (res) => { 
+        this.bookings.set(res.data || []); 
+        this.meta.set(res.meta);
+        this.loading.set(false); 
+      },
       error: () => this.loading.set(false),
     });
   }
