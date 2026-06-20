@@ -1,15 +1,35 @@
-﻿import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { AdminResourceConfig, AdminResourceListComponent } from '../shared/admin-resource-list.component';
 
 @Component({
   selector: 'app-admin-crm',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div>
-      <h1 class="font-display text-2xl font-bold text-dark dark:text-white mb-4">CRM</h1>
-      <p class="text-gray-500 dark:text-white/50">CRM management panel.</p>
-    </div>
-  `
+  imports: [AdminResourceListComponent],
+  template: `<app-admin-resource-list [config]="config" />`,
 })
-export class AdminCrmComponent {}
+export class AdminCrmComponent {
+  readonly config: AdminResourceConfig = {
+    title: 'CRM',
+    description: 'Capture leads and update follow-up status for sales conversations.',
+    endpoint: 'crm/leads',
+    columns: [
+      { key: 'name', label: 'Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'source', label: 'Source' },
+      { key: 'status', label: 'Status' },
+      { key: 'budget', label: 'Budget', type: 'money' },
+    ],
+    fields: [
+      { key: 'name', label: 'Name', required: true },
+      { key: 'email', label: 'Email', required: true },
+      { key: 'phone', label: 'Phone' },
+      { key: 'source', label: 'Source' },
+      { key: 'interest', label: 'Interest' },
+      { key: 'status', label: 'Status', type: 'select', options: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'].map(status => ({ label: status, value: status })) },
+      { key: 'budget', label: 'Budget', type: 'number' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ],
+    defaultCreate: { status: 'NEW' },
+  };
+}

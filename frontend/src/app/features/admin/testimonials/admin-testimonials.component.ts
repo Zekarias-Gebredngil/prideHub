@@ -1,15 +1,30 @@
-﻿import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { AdminResourceConfig, AdminResourceListComponent } from '../shared/admin-resource-list.component';
 
 @Component({
   selector: 'app-admin-testimonials',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div>
-      <h1 class="font-display text-2xl font-bold text-dark dark:text-white mb-4">Testimonials</h1>
-      <p class="text-gray-500 dark:text-white/50">Testimonials management panel.</p>
-    </div>
-  `
+  imports: [AdminResourceListComponent],
+  template: `<app-admin-resource-list [config]="config" />`,
 })
-export class AdminTestimonialsComponent {}
+export class AdminTestimonialsComponent {
+  readonly config: AdminResourceConfig = {
+    title: 'Testimonials',
+    description: 'Review submitted testimonials and approve them for the public site.',
+    endpoint: 'testimonials',
+    query: { approvedOnly: false },
+    canCreate: false,
+    canEdit: false,
+    columns: [
+      { key: 'clientName', label: 'Client' },
+      { key: 'eventType', label: 'Event' },
+      { key: 'rating', label: 'Rating' },
+      { key: 'isApproved', label: 'Approved', type: 'boolean' },
+      { key: 'isFeatured', label: 'Featured', type: 'boolean' },
+    ],
+    actions: [
+      { label: 'Approve', icon: 'check_circle', method: 'patch', endpoint: row => `testimonials/${row.id}/approve`, visible: row => !row.isApproved },
+      { label: 'Delete', icon: 'delete', method: 'delete', endpoint: row => `testimonials/${row.id}`, confirm: 'Delete this testimonial?' },
+    ],
+  };
+}

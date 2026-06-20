@@ -1,15 +1,35 @@
-﻿import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { AdminResourceConfig, AdminResourceListComponent } from '../shared/admin-resource-list.component';
 
 @Component({
   selector: 'app-admin-payments',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div>
-      <h1 class="font-display text-2xl font-bold text-dark dark:text-white mb-4">Payments</h1>
-      <p class="text-gray-500 dark:text-white/50">Payments management panel.</p>
-    </div>
-  `
+  imports: [AdminResourceListComponent],
+  template: `<app-admin-resource-list [config]="config" />`,
 })
-export class AdminPaymentsComponent {}
+export class AdminPaymentsComponent {
+  readonly config: AdminResourceConfig = {
+    title: 'Payments',
+    description: 'Track payments and confirm manual transfers.',
+    endpoint: 'payments',
+    canCreate: false,
+    canEdit: false,
+    columns: [
+      { key: 'booking', path: 'booking.bookingNumber', label: 'Booking' },
+      { key: 'client', path: 'booking.client.fullName', label: 'Client' },
+      { key: 'amount', label: 'Amount', type: 'money' },
+      { key: 'method', label: 'Method' },
+      { key: 'status', label: 'Status' },
+    ],
+    actions: [
+      {
+        label: 'Confirm',
+        icon: 'done_all',
+        method: 'patch',
+        endpoint: row => `payments/${row.id}/confirm`,
+        body: row => ({ transactionRef: row.transactionRef || `MANUAL-${Date.now()}` }),
+        visible: row => row.status !== 'COMPLETED',
+      },
+    ],
+  };
+}

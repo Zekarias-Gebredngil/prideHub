@@ -1,15 +1,28 @@
-﻿import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { AdminResourceConfig, AdminResourceListComponent } from '../shared/admin-resource-list.component';
 
 @Component({
   selector: 'app-admin-gallery',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div>
-      <h1 class="font-display text-2xl font-bold text-dark dark:text-white mb-4">Gallery</h1>
-      <p class="text-gray-500 dark:text-white/50">Gallery management panel.</p>
-    </div>
-  `
+  imports: [AdminResourceListComponent],
+  template: `<app-admin-resource-list [config]="config" />`,
 })
-export class AdminGalleryComponent {}
+export class AdminGalleryComponent {
+  readonly config: AdminResourceConfig = {
+    title: 'Gallery',
+    description: 'Create public gallery albums for event memories.',
+    endpoint: 'gallery/albums',
+    columns: [
+      { key: 'title', label: 'Title' },
+      { key: 'category', label: 'Category' },
+      { key: 'media', path: '_count.media', label: 'Media' },
+    ],
+    fields: [
+      { key: 'title', label: 'Title', required: true },
+      { key: 'category', label: 'Category' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'coverImage', label: 'Cover Image URL' },
+    ],
+    canEdit: false,
+  };
+}
