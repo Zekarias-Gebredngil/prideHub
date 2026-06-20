@@ -29,11 +29,11 @@ interface SearchResponse { results: SearchResult[]; counts?: Record<string, numb
 
           <!-- Logo -->
           <a routerLink="/" class="flex items-center gap-3 group">
-            <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-              <span class="text-secondary font-display font-bold text-lg">P</span>
+            <div class="w-12 h-11 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+              <img src="assets/images/prideHub logo.png" alt="PrideHub Logo" class="w-10 h-10">
             </div>
             <div class="hidden sm:block">
-              <span class="font-display font-bold text-xl" [class]="logoTextClass()">PrideHub</span>
+              <!-- <span class="font-display font-bold text-xl" [class]="logoTextClass()">PrideHub</span> -->
               <p class="text-xs opacity-60 leading-none" [class]="logoTaglineClass()">Where Every Celebration Comes to Life</p>
             </div>
           </a>

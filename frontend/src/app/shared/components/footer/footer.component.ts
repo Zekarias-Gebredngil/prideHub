@@ -18,11 +18,11 @@ import { ApiService } from '../../../core/services/api.service';
           <!-- Brand -->
           <div class="lg:col-span-1">
             <div class="flex items-center gap-3 mb-5">
-              <div class="w-11 h-11 rounded-full bg-primary flex items-center justify-center">
-                <span class="text-secondary font-display font-bold text-xl">P</span>
+              <div class="w-11 h-11 rounded-full bg-white flex items-center justify-center">
+                <img src="assets/images/prideHub logo.png" alt="PrideHub Logo" class="w-10 h-10">
               </div>
               <div>
-                <h3 class="font-display font-bold text-xl text-white">PrideHub</h3>
+              
                 <p class="text-xs text-white/50">Where Every Celebration Comes to Life</p>
               </div>
             </div>
@@ -104,7 +104,7 @@ import { ApiService } from '../../../core/services/api.service';
         <!-- Bottom Bar -->
         <div class="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p class="text-white/40 text-sm text-center md:text-left">
-            &copy; {{ currentYear }} PrideHub. All rights reserved. Built with ❤️ in Ethiopia.
+            &copy; {{ currentYear }} PrideHub. All rights reserved. Powered by Nadi Tech PLC.
           </p>
           <div class="flex items-center gap-4">
             @for (link of legalLinks; track link.label) {
