@@ -25,14 +25,14 @@ import { Message } from '../../../core/models/content.model';
             </div>
           } @else {
             @for (msg of inbox(); track msg.id) {
-              <button (click)="openConversation(msg.sender!.id)"
+              <button (click)="openConversation(getCounterpart(msg)!.id)"
                       class="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-left border-b border-gray-50 dark:border-white/5"
-                      [class.bg-primary/5]="activeUserId() === msg.sender!.id">
+                      [class.bg-primary/5]="activeUserId() === getCounterpart(msg)!.id">
                 <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                  {{ msg.sender?.fullName?.[0] || 'U' }}
+                  {{ getCounterpart(msg)?.fullName?.[0] || 'U' }}
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="font-medium text-dark dark:text-white text-sm truncate">{{ msg.sender?.fullName }}</p>
+                  <p class="font-medium text-dark dark:text-white text-sm truncate">{{ getCounterpart(msg)?.fullName }}</p>
                   <p class="text-gray-400 text-xs truncate">{{ msg.content }}</p>
                 </div>
                 @if (!msg.isRead) {
@@ -135,11 +135,18 @@ export class MessagesComponent implements OnInit, AfterViewChecked {
 
   openConversation(userId: string): void {
     this.activeUserId.set(userId);
-    const found = this.inbox().find(m => m.sender?.id === userId);
-    this.activeUser.set(found?.sender || null);
+    const found = this.inbox().find(m => this.getCounterpart(m)?.id === userId);
+    this.activeUser.set(found ? this.getCounterpart(found) : null);
     this.api.get<any>(`messages/${userId}`).subscribe({
       next: (data) => this.messages.set(data.data || data || []),
     });
+  }
+
+  getCounterpart(message: Message): { id: string; fullName: string; avatar?: string } | null {
+    if (message.counterpart) return message.counterpart;
+    const currentUserId = this.auth.currentUser()?.id;
+    if (message.senderId === currentUserId) return message.receiver || null;
+    return message.sender || null;
   }
 
   sendMessage(): void {

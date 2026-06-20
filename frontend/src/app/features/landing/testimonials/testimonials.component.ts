@@ -94,7 +94,13 @@ import { StarRatingComponent } from '../../../shared/components/star-rating/star
               <p class="font-semibold text-green-800">Thank you for your review!</p>
               <p class="text-sm text-green-600 mt-1">It will appear after approval by our team.</p>
             </div>
-          } @else {
+          }
+          @if (submitError()) {
+            <div class="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm mb-4">
+              {{ submitError() }}
+            </div>
+          }
+          @if (!submitted()) {
             <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
               <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -152,6 +158,7 @@ export class TestimonialsComponent implements OnInit {
   readonly selectedType = signal('');
   readonly submitted = signal(false);
   readonly submitting = signal(false);
+  readonly submitError = signal('');
 
   eventTypes = ['Wedding', 'Birthday', 'Corporate', 'Graduation', 'Engagement', 'Baby Shower'];
 
@@ -178,9 +185,13 @@ export class TestimonialsComponent implements OnInit {
   onSubmit(): void {
     if (this.form.invalid) return;
     this.submitting.set(true);
+    this.submitError.set('');
     this.api.post('testimonials', this.form.value).subscribe({
       next: () => { this.submitting.set(false); this.submitted.set(true); },
-      error: () => { this.submitting.set(false); this.submitted.set(true); },
+      error: (err) => {
+        this.submitting.set(false);
+        this.submitError.set(err?.error?.message || 'Review could not be submitted. Please try again.');
+      },
     });
   }
 }

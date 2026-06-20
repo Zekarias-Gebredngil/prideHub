@@ -174,4 +174,6 @@ export interface Message {
   readAt?: string;
   createdAt: string;
   sender?: { id: string; fullName: string; avatar?: string };
+  receiver?: { id: string; fullName: string; avatar?: string };
+  counterpart?: { id: string; fullName: string; avatar?: string };
 }

@@ -1,11 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ApiService } from '../../../core/services/api.service';
 
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     <footer class="bg-dark text-white pt-16 pb-8">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -69,13 +71,23 @@ import { CommonModule } from '@angular/common';
           <div>
             <h4 class="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Stay Updated</h4>
             <p class="text-white/60 text-sm mb-4">Subscribe for event tips, trends, and exclusive offers.</p>
-            <div class="flex gap-2">
-              <input type="email" placeholder="Your email"
+            <form [formGroup]="newsletterForm" (ngSubmit)="subscribe()" class="flex gap-2">
+              <input type="email" formControlName="email" placeholder="Your email"
                      class="flex-1 px-3 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white text-sm placeholder-white/40 focus:outline-none focus:border-secondary">
-              <button class="px-4 py-2.5 rounded-xl bg-secondary text-dark font-semibold text-sm hover:bg-secondary/90 transition-colors">
-                <span class="material-icons text-sm">send</span>
+              <button type="submit" [disabled]="newsletterForm.invalid || newsletterLoading()"
+                      class="px-4 py-2.5 rounded-xl bg-secondary text-dark font-semibold text-sm hover:bg-secondary/90 transition-colors disabled:opacity-50">
+                @if (newsletterLoading()) {
+                  <span class="w-4 h-4 border-2 border-dark/20 border-t-dark rounded-full animate-spin block"></span>
+                } @else {
+                  <span class="material-icons text-sm">send</span>
+                }
               </button>
-            </div>
+            </form>
+            @if (newsletterMessage()) {
+              <p class="text-xs mt-2" [class]="newsletterSuccess() ? 'text-green-300' : 'text-red-300'">
+                {{ newsletterMessage() }}
+              </p>
+            }
 
             <!-- Contact -->
             <div class="mt-6 space-y-2">
@@ -107,7 +119,17 @@ import { CommonModule } from '@angular/common';
   `,
 })
 export class FooterComponent {
+  private readonly api = inject(ApiService);
+  private readonly fb = inject(FormBuilder);
+
   currentYear = new Date().getFullYear();
+  readonly newsletterLoading = signal(false);
+  readonly newsletterSuccess = signal(false);
+  readonly newsletterMessage = signal('');
+
+  readonly newsletterForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+  });
 
   socials = [
     { name: 'Facebook', icon: 'facebook', url: '#' },
@@ -145,4 +167,24 @@ export class FooterComponent {
     { icon: 'phone', value: '+251 911 234 567' },
     { icon: 'email', value: 'info@pridehub.com' },
   ];
+
+  subscribe(): void {
+    if (this.newsletterForm.invalid) return;
+    this.newsletterLoading.set(true);
+    this.newsletterMessage.set('');
+
+    this.api.post('newsletter/subscribe', this.newsletterForm.getRawValue()).subscribe({
+      next: () => {
+        this.newsletterLoading.set(false);
+        this.newsletterSuccess.set(true);
+        this.newsletterMessage.set('Subscribed. We will send you event tips and offers.');
+        this.newsletterForm.reset();
+      },
+      error: (err) => {
+        this.newsletterLoading.set(false);
+        this.newsletterSuccess.set(false);
+        this.newsletterMessage.set(err?.error?.message || 'Subscription failed. Please try again.');
+      },
+    });
+  }
 }

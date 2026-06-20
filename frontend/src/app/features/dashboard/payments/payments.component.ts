@@ -74,7 +74,7 @@ export class PaymentsComponent implements OnInit {
   readonly stats = signal<any[]>([]);
 
   ngOnInit(): void {
-    this.api.getPaginated<Payment>('payments/booking/all', { limit: 50 }).subscribe({
+    this.api.getPaginated<Payment>('payments', { limit: 50 }).subscribe({
       next: (res) => {
         const data = res.data || [];
         this.payments.set(data);

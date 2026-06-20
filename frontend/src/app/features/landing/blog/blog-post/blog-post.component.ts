@@ -132,6 +132,11 @@ import { BlogPost } from '../../../../core/models/content.model';
                     <p class="text-green-800 text-sm">Comment submitted! It will appear after approval.</p>
                   </div>
                 } @else {
+                  @if (commentError()) {
+                    <div class="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm mb-3">
+                      {{ commentError() }}
+                    </div>
+                  }
                   <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="space-y-3">
                     <div class="grid grid-cols-2 gap-3">
                       <input type="text" formControlName="authorName" placeholder="Your name"
@@ -164,10 +169,16 @@ import { BlogPost } from '../../../../core/models/content.model';
                 <p class="text-white/60 text-xs mb-3">Subscribe for weekly event planning insights.</p>
                 <input type="email" [(ngModel)]="newsletterEmail" placeholder="Your email"
                        class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-xs placeholder-white/40 focus:outline-none focus:border-secondary mb-2">
-                <button class="w-full py-2 rounded-lg bg-secondary text-dark text-xs font-semibold hover:bg-secondary/90 transition-colors"
+                <button class="w-full py-2 rounded-lg bg-secondary text-dark text-xs font-semibold hover:bg-secondary/90 transition-colors disabled:opacity-50"
+                        [disabled]="newsletterLoading() || !newsletterEmail"
                         (click)="subscribeNewsletter()">
-                  Subscribe
+                  {{ newsletterLoading() ? 'Subscribing...' : 'Subscribe' }}
                 </button>
+                @if (newsletterMessage()) {
+                  <p class="text-xs mt-2" [class]="newsletterSuccess() ? 'text-green-200' : 'text-red-200'">
+                    {{ newsletterMessage() }}
+                  </p>
+                }
               </div>
 
               <!-- Plan Event CTA -->
@@ -195,6 +206,10 @@ export class BlogPostComponent implements OnInit {
   readonly loading = signal(true);
   readonly commentSubmitted = signal(false);
   readonly commentSubmitting = signal(false);
+  readonly commentError = signal('');
+  readonly newsletterLoading = signal(false);
+  readonly newsletterSuccess = signal(false);
+  readonly newsletterMessage = signal('');
   newsletterEmail = '';
 
   commentForm = this.fb.group({
@@ -220,16 +235,33 @@ export class BlogPostComponent implements OnInit {
   submitComment(): void {
     if (this.commentForm.invalid) return;
     this.commentSubmitting.set(true);
+    this.commentError.set('');
     const slug = this.route.snapshot.paramMap.get('slug')!;
     this.api.post(`blog/${slug}/comments`, this.commentForm.value).subscribe({
       next: () => { this.commentSubmitting.set(false); this.commentSubmitted.set(true); },
-      error: () => { this.commentSubmitting.set(false); this.commentSubmitted.set(true); },
+      error: (err) => {
+        this.commentSubmitting.set(false);
+        this.commentError.set(err?.error?.message || 'Comment could not be submitted. Please try again.');
+      },
     });
   }
 
   subscribeNewsletter(): void {
-    if (this.newsletterEmail) {
-      this.api.post('newsletter/subscribe', { email: this.newsletterEmail }).subscribe();
-    }
+    if (!this.newsletterEmail) return;
+    this.newsletterLoading.set(true);
+    this.newsletterMessage.set('');
+    this.api.post('newsletter/subscribe', { email: this.newsletterEmail }).subscribe({
+      next: () => {
+        this.newsletterLoading.set(false);
+        this.newsletterSuccess.set(true);
+        this.newsletterMessage.set('Subscribed.');
+        this.newsletterEmail = '';
+      },
+      error: (err) => {
+        this.newsletterLoading.set(false);
+        this.newsletterSuccess.set(false);
+        this.newsletterMessage.set(err?.error?.message || 'Subscription failed.');
+      },
+    });
   }
 }

@@ -29,7 +29,13 @@ import { ApiService } from '../../../core/services/api.service';
                 <p class="font-semibold text-green-800">Message sent successfully!</p>
                 <p class="text-sm text-green-700 mt-1">We'll get back to you within 24 hours.</p>
               </div>
-            } @else {
+            }
+            @if (error()) {
+              <div class="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm mb-6">
+                {{ error() }}
+              </div>
+            }
+            @if (!success()) {
               <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
                 <div class="grid grid-cols-2 gap-4">
                   <div>
@@ -108,6 +114,7 @@ export class ContactComponent {
 
   readonly loading = signal(false);
   readonly success = signal(false);
+  readonly error = signal('');
 
   form = this.fb.group({
     name:    ['', Validators.required],
@@ -127,9 +134,13 @@ export class ContactComponent {
   onSubmit(): void {
     if (this.form.invalid) return;
     this.loading.set(true);
+    this.error.set('');
     this.api.post('contact', this.form.value).subscribe({
       next: () => { this.loading.set(false); this.success.set(true); },
-      error: () => { this.loading.set(false); this.success.set(true); },
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(err?.error?.message || 'Message could not be sent. Please try again.');
+      },
     });
   }
 }
