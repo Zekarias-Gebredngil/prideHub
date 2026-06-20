@@ -1,0 +1,60 @@
+{
+  "APP_NAME": "PrideHub",
+  "APP_TAGLINE": "Where Every Celebration Comes to Life",
+  "NAV": {
+    "HOME": "Home",
+    "ABOUT": "About",
+    "SERVICES": "Services",
+    "PACKAGES": "Packages",
+    "VENUES": "Venues",
+    "VENDORS": "Vendors",
+    "GALLERY": "Gallery",
+    "BLOG": "Blog",
+    "CONTACT": "Contact"
+  },
+  "AUTH": {
+    "LOGIN": "Sign In",
+    "REGISTER": "Get Started",
+    "LOGOUT": "Sign Out",
+    "FORGOT_PASSWORD": "Forgot Password?",
+    "RESET_PASSWORD": "Reset Password"
+  },
+  "BOOKING": {
+    "BOOK_NOW": "Book Now",
+    "PLAN_EVENT": "Plan Your Event",
+    "SELECT_PACKAGE": "Select Package",
+    "SELECT_VENUE": "Select Venue",
+    "EVENT_DATE": "Event Date",
+    "GUEST_COUNT": "Guest Count",
+    "SPECIAL_REQUESTS": "Special Requests"
+  },
+  "STATUS": {
+    "PENDING": "Pending",
+    "CONFIRMED": "Confirmed",
+    "PLANNING": "Planning",
+    "IN_PROGRESS": "In Progress",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "COMMON": {
+    "LOADING": "Loading...",
+    "SAVE": "Save",
+    "CANCEL": "Cancel",
+    "DELETE": "Delete",
+    "EDIT": "Edit",
+    "VIEW": "View",
+    "SEARCH": "Search",
+    "FILTER": "Filter",
+    "SORT": "Sort",
+    "NEXT": "Next",
+    "PREVIOUS": "Previous",
+    "SUBMIT": "Submit",
+    "BACK": "Back"
+  },
+  "ERRORS": {
+    "REQUIRED": "This field is required",
+    "EMAIL_INVALID": "Invalid email address",
+    "PASSWORD_MIN": "Minimum 8 characters required",
+    "GENERAL": "Something went wrong. Please try again."
+  }
+}

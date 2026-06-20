@@ -1,0 +1,54 @@
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# ── Build Outputs ─────────────────────────────────────────────────────────────
+dist/
+build/
+out-tsc/
+
+# ── Environment / Secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── Angular ───────────────────────────────────────────────────────────────────
+.angular/
+.sass-cache/
+
+# ── NestJS ────────────────────────────────────────────────────────────────────
+backend/dist/
+backend/coverage/
+backend/logs/
+backend/uploads/
+
+# ── Frontend ──────────────────────────────────────────────────────────────────
+frontend/dist/
+frontend/coverage/
+frontend/.angular/
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+
+# ── Test / Coverage ───────────────────────────────────────────────────────────
+coverage/
+*.lcov
+.nyc_output
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.tgz
+*.zip
+testem.log
+connect.lock

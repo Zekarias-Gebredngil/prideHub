@@ -1,0 +1,60 @@
+{
+  "APP_NAME": "ፕራይድ ሃብ",
+  "APP_TAGLINE": "እያንዳንዱ ደስታ ወደ ህይወት የሚመጣበት",
+  "NAV": {
+    "HOME": "መነሻ",
+    "ABOUT": "ስለ እኛ",
+    "SERVICES": "አገልግሎቶች",
+    "PACKAGES": "ጥቅሎች",
+    "VENUES": "ቦታዎች",
+    "VENDORS": "አቅራቢዎች",
+    "GALLERY": "ጋለሪ",
+    "BLOG": "ብሎግ",
+    "CONTACT": "አግኙን"
+  },
+  "AUTH": {
+    "LOGIN": "ግባ",
+    "REGISTER": "ይመዝገቡ",
+    "LOGOUT": "ውጣ",
+    "FORGOT_PASSWORD": "የይለፍ ቃል ረሱ?",
+    "RESET_PASSWORD": "የይለፍ ቃል ዳግም ያስጀምሩ"
+  },
+  "BOOKING": {
+    "BOOK_NOW": "አሁን ያስያዙ",
+    "PLAN_EVENT": "ዝግጅቶን ያቅዱ",
+    "SELECT_PACKAGE": "ጥቅል ይምረጡ",
+    "SELECT_VENUE": "ቦታ ይምረጡ",
+    "EVENT_DATE": "የዝግጅት ቀን",
+    "GUEST_COUNT": "የእንግዶች ቁጥር",
+    "SPECIAL_REQUESTS": "ልዩ ጥያቄዎች"
+  },
+  "STATUS": {
+    "PENDING": "በመጠባበቅ ላይ",
+    "CONFIRMED": "ተረጋግጧል",
+    "PLANNING": "በዕቅድ ላይ",
+    "IN_PROGRESS": "በሂደት ላይ",
+    "COMPLETED": "ተጠናቋል",
+    "CANCELLED": "ተሰርዟል"
+  },
+  "COMMON": {
+    "LOADING": "በመጫን ላይ...",
+    "SAVE": "አስቀምጥ",
+    "CANCEL": "ሰርዝ",
+    "DELETE": "ሰርዝ",
+    "EDIT": "አርትዕ",
+    "VIEW": "ተመልከት",
+    "SEARCH": "ፈልግ",
+    "FILTER": "ማጣሪያ",
+    "SORT": "ደርደር",
+    "NEXT": "ቀጣይ",
+    "PREVIOUS": "ቀዳሚ",
+    "SUBMIT": "አስረክብ",
+    "BACK": "ተመለስ"
+  },
+  "ERRORS": {
+    "REQUIRED": "ይህ መስክ ያስፈልጋል",
+    "EMAIL_INVALID": "ትክክለኛ ያልሆነ ኢሜይል",
+    "PASSWORD_MIN": "ቢያንስ 8 ቁምፊዎች ያስፈልጋሉ",
+    "GENERAL": "ስህተት ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።"
+  }
+}

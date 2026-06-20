@@ -1,0 +1,184 @@
+// ── Angular Material MUST be imported with @use BEFORE any other rules ───────
+@use '@angular/material' as mat;
+
+// ── Material Theme Setup ──────────────────────────────────────────────────────
+$primary-palette: mat.m2-define-palette((
+  50: #fdf2f4, 100: #fce7ec, 200: #f9d0da, 300: #f4abbe,
+  400: #ec789a, 500: #8B1538, 600: #7a1230, 700: #6a0f28,
+  800: #5a0c20, 900: #4a0918,
+  contrast: (
+    50: #2B2B2B, 100: #2B2B2B, 200: #2B2B2B, 300: #2B2B2B,
+    400: #fff, 500: #fff, 600: #fff, 700: #fff, 800: #fff, 900: #fff,
+  )
+), 500);
+
+$accent-palette: mat.m2-define-palette((
+  50: #fefde8, 100: #fffcc3, 200: #fff48a, 300: #ffe647,
+  400: #D4AF37, 500: #c9a22e, 600: #b38e25, 700: #997a1e,
+  800: #7f6618, 900: #655112,
+  contrast: (
+    50: #2B2B2B, 100: #2B2B2B, 200: #2B2B2B, 300: #2B2B2B,
+    400: #2B2B2B, 500: #2B2B2B, 600: #2B2B2B, 700: #fff, 800: #fff, 900: #fff,
+  )
+), 400);
+
+$theme: mat.m2-define-light-theme((
+  color: (primary: $primary-palette, accent: $accent-palette),
+  typography: mat.m2-define-typography-config($font-family: 'Inter, sans-serif'),
+  density: 0,
+));
+
+@include mat.all-component-themes($theme);
+
+// Dark mode
+$dark-theme: mat.m2-define-dark-theme((
+  color: (primary: $primary-palette, accent: $accent-palette),
+));
+.dark { @include mat.all-component-colors($dark-theme); }
+
+// ── Tailwind (AFTER @use rules) ───────────────────────────────────────────────
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+// ── Google Fonts ──────────────────────────────────────────────────────────────
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap');
+
+// ── Base Styles ───────────────────────────────────────────────────────────────
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #2B2B2B;
+  background: #FFFFFF;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0;
+}
+
+.dark body {
+  color: #F8F5F2;
+  background: #1a0a10;
+}
+
+// ── Typography ────────────────────────────────────────────────────────────────
+h1, h2, h3 { font-family: 'Playfair Display', serif; }
+
+// ── Glassmorphism ─────────────────────────────────────────────────────────────
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+}
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  background: #8B1538;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  font-size: 0.875rem;
+  &:hover {
+    background: #781535;
+    box-shadow: 0 20px 60px rgba(139, 21, 56, 0.15);
+    transform: translateY(-2px);
+  }
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  background: #D4AF37;
+  color: #2B2B2B;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  font-size: 0.875rem;
+  &:hover {
+    box-shadow: 0 20px 60px rgba(139, 21, 56, 0.15);
+    transform: translateY(-2px);
+  }
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid #8B1538;
+  color: #8B1538;
+  padding: 10px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  font-size: 0.875rem;
+  &:hover {
+    background: #8B1538;
+    color: #fff;
+  }
+}
+
+// ── Layout helpers ────────────────────────────────────────────────────────────
+.section { padding: 64px 0; }
+@media (min-width: 768px) { .section { padding: 96px 0; } }
+.container { max-width: 1280px; margin: 0 auto; padding: 0 16px; }
+@media (min-width: 640px)  { .container { padding: 0 24px; } }
+@media (min-width: 1024px) { .container { padding: 0 32px; } }
+
+// ── Skeleton Loader ───────────────────────────────────────────────────────────
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// ── Animations ────────────────────────────────────────────────────────────────
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up { animation: fadeInUp 0.6s ease forwards; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-12px); }
+}
+.animate-float { animation: float 4s ease-in-out infinite; }
+
+// ── Scrollbar ─────────────────────────────────────────────────────────────────
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #8B1538; border-radius: 3px; }
+
+// ── Angular Material overrides ────────────────────────────────────────────────
+.mat-mdc-form-field { width: 100%; }
+.mdc-notched-outline__notch { border-right: none !important; }
+
+// ── Page transitions ──────────────────────────────────────────────────────────
+router-outlet + * { animation: fadeInUp 0.4s ease; }
