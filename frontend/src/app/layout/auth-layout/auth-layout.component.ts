@@ -17,7 +17,7 @@ import { RouterOutlet, RouterLink } from '@angular/router';
         <div class="relative z-10 flex flex-col justify-center px-16">
           <a routerLink="/" class="flex items-center gap-3 mb-12">
             <div class="w-14 h-14 rounded-2xl bg-secondary/20 border border-secondary/30 flex items-center justify-center">
-              <span class="text-secondary font-display font-bold text-3xl">P</span>
+            <img src="assets/images/prideHub logo.png" alt="PrideHub Logo" class="w-13 h-13">
             </div>
             <div>
               <h1 class="text-white font-display font-bold text-3xl">PrideHub</h1>

@@ -14,11 +14,10 @@ import { AuthService } from '../../core/services/auth.service';
       <aside class="fixed left-0 top-0 h-full w-64 z-40 bg-dark flex flex-col shadow-2xl overflow-y-auto">
         <!-- Logo -->
         <div class="h-16 flex items-center gap-3 px-5 border-b border-white/10">
-          <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-            <span class="text-secondary font-bold text-lg">P</span>
+          <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center">
+            <img src="assets/images/prideHub logo.png" alt="PrideHub Logo" class="w-8 h-8">
           </div>
           <div>
-            <span class="font-display font-bold text-white text-lg">PrideHub</span>
             <p class="text-white/40 text-xs">Admin Panel</p>
           </div>
         </div>

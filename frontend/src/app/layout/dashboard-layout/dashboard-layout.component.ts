@@ -18,8 +18,10 @@ interface SidebarLink { label: string; path: string; icon: string; }
 
         <!-- Logo -->
         <div class="h-16 flex items-center gap-3 px-5 border-b border-gray-100 dark:border-white/10">
-          <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0">
-            <span class="text-secondary font-bold text-lg">P</span>
+          <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
+            <img src="assets/images/prideHub logo.png" alt="PrideHub Logo" class="w-8 h-8">
+            <!-- Welcome current user -->
+            
           </div>
           @if (sidebarOpen()) {
             <span class="font-display font-bold text-primary dark:text-secondary text-lg">PrideHub</span>
