@@ -5,6 +5,7 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser, JwtUser } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Payments')
@@ -15,9 +16,15 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Get()
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all payments' })
-  findAll(@Query() dto: PaginationDto) { return this.paymentsService.findAll(dto); }
+  findAll(@Query() dto: PaginationDto, @CurrentUser() user: JwtUser) {
+    return this.paymentsService.findAll(dto, {
+      userId: user.sub,
+      isAdmin:
+        user.role === UserRole.SUPER_ADMIN ||
+        user.role === UserRole.ADMIN,
+    });
+  }
 
   @Get('stats/revenue')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)

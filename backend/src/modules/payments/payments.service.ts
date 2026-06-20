@@ -22,6 +22,11 @@ export class CreateInvoiceDto {
   notes?: string;
 }
 
+export interface PaymentViewerScope {
+  userId: string;
+  isAdmin: boolean;
+}
+
 @Injectable()
 export class PaymentsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -141,9 +146,11 @@ export class PaymentsService {
     });
   }
 
-  async findAll(dto: PaginationDto) {
+  async findAll(dto: PaginationDto, viewer?: PaymentViewerScope) {
+    const where = viewer && !viewer.isAdmin ? { booking: { clientId: viewer.userId } } : undefined;
     const [data, total] = await Promise.all([
       this.prisma.payment.findMany({
+        ...(where && { where }),
         skip: dto.skip,
         take: dto.take,
         orderBy: { createdAt: 'desc' },
@@ -151,7 +158,7 @@ export class PaymentsService {
           booking: { select: { bookingNumber: true, client: { select: { fullName: true } } } },
         },
       }),
-      this.prisma.payment.count(),
+      where ? this.prisma.payment.count({ where }) : this.prisma.payment.count(),
     ]);
     return paginate(data, total, dto);
   }

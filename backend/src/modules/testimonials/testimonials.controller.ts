@@ -14,7 +14,9 @@ export class TestimonialsController {
   constructor(private readonly testimonialsService: TestimonialsService) {}
 
   @Public() @Get()
-  findAll(@Query() dto: PaginationDto) { return this.testimonialsService.findAll(dto); }
+  findAll(@Query() dto: PaginationDto, @Query('approvedOnly') approvedOnly?: string) {
+    return this.testimonialsService.findAll(dto, approvedOnly !== 'false');
+  }
 
   @Public() @Get('featured')
   findFeatured() { return this.testimonialsService.findFeatured(); }

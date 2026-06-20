@@ -42,12 +42,40 @@ export class MessagesService {
   }
 
   async getInbox(userId: string) {
-    return this.prisma.message.findMany({
+    const messages = await this.prisma.message.findMany({
       where: { OR: [{ senderId: userId }, { receiverId: userId }], deletedAt: null },
       orderBy: { createdAt: 'desc' },
-      distinct: ['receiverId'],
-      take: 20,
-      include: { sender: { select: { id: true, fullName: true, avatar: true } } },
+      take: 100,
+      include: {
+        sender: { select: { id: true, fullName: true, avatar: true } },
+      },
+    });
+
+    const seen = new Set<string>();
+    const latestMessages: typeof messages = [];
+    for (const message of messages) {
+      const counterpartId = message.senderId === userId ? message.receiverId : message.senderId;
+      if (seen.has(counterpartId)) continue;
+      seen.add(counterpartId);
+      latestMessages.push(message);
+      if (latestMessages.length === 20) break;
+    }
+
+    const counterpartIds = latestMessages.map(message => (
+      message.senderId === userId ? message.receiverId : message.senderId
+    ));
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: counterpartIds } },
+      select: { id: true, fullName: true, avatar: true },
+    });
+    const usersById = new Map(users.map(user => [user.id, user]));
+
+    return latestMessages.map(message => {
+      const counterpartId = message.senderId === userId ? message.receiverId : message.senderId;
+      return {
+        ...message,
+        counterpart: usersById.get(counterpartId) || message.sender,
+      };
     });
   }
 

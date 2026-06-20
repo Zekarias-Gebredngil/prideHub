@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { BlogService, CreateBlogPostDto } from './blog.service';
+import { BlogService, CreateBlogCommentDto, CreateBlogPostDto } from './blog.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -15,8 +15,8 @@ export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
   @Public() @Get()
-  findAll(@Query() dto: PaginationDto, @Query('categoryId') cat?: string) {
-    return this.blogService.findAll(dto, cat);
+  findAll(@Query() dto: PaginationDto, @Query('categoryId') cat?: string, @Query('status') status?: BlogStatus | 'ALL') {
+    return this.blogService.findAll(dto, cat, status);
   }
 
   @Public() @Get('categories')
@@ -27,6 +27,13 @@ export class BlogController {
 
   @Public() @Get(':slug')
   findBySlug(@Param('slug') slug: string) { return this.blogService.findBySlug(slug); }
+
+  @Public()
+  @Post(':slug/comments')
+  @ApiOperation({ summary: 'Submit a blog comment for moderation' })
+  createComment(@Param('slug') slug: string, @Body() dto: CreateBlogCommentDto) {
+    return this.blogService.createComment(slug, dto);
+  }
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)

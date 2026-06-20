@@ -16,6 +16,13 @@ export class CreateBlogPostDto {
   tags?: string[];
 }
 
+export class CreateBlogCommentDto {
+  authorName: string;
+  authorEmail: string;
+  content: string;
+  parentId?: string;
+}
+
 @Injectable()
 export class BlogService {
   constructor(private readonly prisma: PrismaService) {}
@@ -47,11 +54,11 @@ export class BlogService {
     });
   }
 
-  async findAll(dto: PaginationDto, categoryId?: string, status?: BlogStatus) {
+  async findAll(dto: PaginationDto, categoryId?: string, status?: BlogStatus | 'ALL') {
     const where: any = {
       deletedAt: null,
       ...(categoryId && { categoryId }),
-      ...(status ? { status } : { status: BlogStatus.PUBLISHED }),
+      ...(status === 'ALL' ? {} : status ? { status } : { status: BlogStatus.PUBLISHED }),
       ...(dto.search && {
         OR: [
           { title: { contains: dto.search, mode: 'insensitive' } },
@@ -96,6 +103,24 @@ export class BlogService {
     if (!post) throw new NotFoundException('Post not found');
     await this.prisma.blogPost.update({ where: { id: post.id }, data: { views: { increment: 1 } } });
     return post;
+  }
+
+  async createComment(slug: string, dto: CreateBlogCommentDto) {
+    const post = await this.prisma.blogPost.findFirst({
+      where: { slug, deletedAt: null, status: BlogStatus.PUBLISHED },
+      select: { id: true },
+    });
+    if (!post) throw new NotFoundException('Post not found');
+
+    return this.prisma.blogComment.create({
+      data: {
+        postId: post.id,
+        authorName: dto.authorName,
+        authorEmail: dto.authorEmail,
+        content: dto.content,
+        parentId: dto.parentId,
+      },
+    });
   }
 
   async update(id: string, dto: Partial<CreateBlogPostDto>) {
