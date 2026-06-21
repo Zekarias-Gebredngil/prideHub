@@ -1,24 +1,66 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Type } from 'class-transformer';
+import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
 
 export class CreatePaymentDto {
+  @IsUUID()
   bookingId: string;
+
+  @IsOptional()
+  @IsUUID()
   invoiceId?: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   amount: number;
+
+  @IsOptional()
+  @IsString()
   currency?: string;
+
+  @IsEnum(PaymentMethod)
   method: PaymentMethod;
+
+  @IsOptional()
+  @IsString()
   transactionRef?: string;
+
+  @IsOptional()
+  @IsString()
   notes?: string;
 }
 
 export class CreateInvoiceDto {
+  @IsUUID()
   bookingId: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   subtotal: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   taxAmount?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   discountAmt?: number;
+
+  @IsOptional()
+  @IsString()
   dueDate?: string;
+
+  @IsOptional()
+  @IsString()
   notes?: string;
 }
 
@@ -139,6 +181,18 @@ export class PaymentsService {
     return updated;
   }
 
+  async updateStatus(id: string, status: PaymentStatus, notes?: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    if (!payment) throw new NotFoundException('Payment not found');
+
+    const updated = await this.prisma.payment.update({
+      where: { id },
+      data: { status, notes: notes || payment.notes },
+    });
+
+    return updated;
+  }
+
   async getPaymentsByBooking(bookingId: string) {
     return this.prisma.payment.findMany({
       where: { bookingId },
@@ -192,14 +246,117 @@ export class PaymentsService {
     });
     if (!payment) throw new NotFoundException('Payment not found');
 
-    // In production, integrate with Chapa API
     const txRef = `PH-${paymentId.substring(0, 8)}-${Date.now()}`;
     await this.prisma.payment.update({ where: { id: paymentId }, data: { transactionRef: txRef, status: PaymentStatus.PROCESSING } });
 
-    return {
-      checkoutUrl: `https://api.chapa.co/v1/hosted/pay/${txRef}`,
-      txRef,
-      message: 'Redirect user to checkoutUrl to complete payment',
+    const client = payment.booking.client;
+    const names = (client.fullName || 'Guest User').split(' ');
+    const firstName = names[0];
+    const lastName = names.slice(1).join(' ') || firstName;
+
+    const payload = {
+      amount: payment.amount.toString(),
+      currency: payment.currency || 'ETB',
+      email: client.email || 'customer@example.com',
+      first_name: firstName,
+      last_name: lastName,
+      phone_number: client.phone || '',
+      tx_ref: txRef,
+      callback_url: `http://localhost:3000/api/v1/payments/webhook/chapa`,
+      return_url: `http://localhost:4200/dashboard/bookings/${payment.bookingId}?payment_ref=${txRef}`,
+      customization: {
+        title: 'PrideHub Payment',
+        description: `Payment for Booking ${payment.booking.bookingNumber}`,
+      },
     };
+
+    try {
+      const response = await fetch('https://api.chapa.co/v1/transaction/initialize', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.CHAPA_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      
+      if (data.status !== 'success') {
+        const errorMsg = typeof data.message === 'string' ? data.message : JSON.stringify(data.message || data);
+        throw new BadRequestException(`Chapa Error: ${errorMsg}`);
+      }
+
+      return {
+        checkoutUrl: data.data.checkout_url,
+        txRef,
+        message: 'Redirect user to checkoutUrl to complete payment',
+      };
+    } catch (error: any) {
+      // Revert status on failure
+      await this.prisma.payment.update({ where: { id: paymentId }, data: { status: PaymentStatus.PENDING } });
+      
+      if (error.response && error.status) {
+         throw error; // It's already a NestJS HttpException
+      }
+      
+      throw new BadRequestException(error.message || 'Failed to communicate with Chapa');
+    }
+  }
+
+  async verifyChapaPayment(txRef: string) {
+    const payment = await this.prisma.payment.findFirst({ where: { transactionRef: txRef } });
+    if (!payment) throw new NotFoundException('Payment transaction not found');
+
+    if (payment.status === PaymentStatus.COMPLETED) return payment;
+
+    const secretKey = process.env.CHAPA_SECRET_KEY || 'CHASECK_TEST-Zf1BucPZVL5tWXGh8yKJx2m7VR2lCmSl';
+    
+    try {
+      const response = await fetch(`https://api.chapa.co/v1/transaction/verify/${txRef}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${secretKey}`,
+        },
+      });
+      const data = await response.json();
+
+      if (data.status === 'success' && data.data.status === 'success') {
+        return this.confirmPayment(payment.id, txRef);
+      } else if (data.status === 'success' && data.data.status === 'failed') {
+        return this.prisma.payment.update({ where: { id: payment.id }, data: { status: PaymentStatus.FAILED } });
+      }
+      
+      return payment;
+    } catch (error) {
+      return payment;
+    }
+  }
+
+  async handleChapaWebhook(body: any) {
+    const txRef = body.tx_ref;
+    if (!txRef) return { message: 'Ignored' };
+
+    // Verify transaction with Chapa
+    try {
+      const response = await fetch(`https://api.chapa.co/v1/transaction/verify/${txRef}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.CHAPA_SECRET_KEY}`,
+        },
+      });
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        const payment = await this.prisma.payment.findFirst({ where: { transactionRef: txRef } });
+        if (payment && payment.status !== PaymentStatus.COMPLETED) {
+          await this.confirmPayment(payment.id, txRef);
+        }
+      }
+    } catch (error) {
+      console.error('Chapa verification failed:', error);
+    }
+    
+    return { status: 'success' };
   }
 }
