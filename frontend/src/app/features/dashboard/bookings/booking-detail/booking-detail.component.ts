@@ -150,10 +150,10 @@ import { Booking } from '../../../../core/models/booking.model';
                 </div>
               </div>
               @if (booking()!.totalAmount > booking()!.paidAmount) {
-                <a routerLink="/dashboard/payments"
-                   class="block w-full mt-4 text-center py-3 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-900 transition-colors">
-                  Make Payment
-                </a>
+                <button (click)="makePayment()" [disabled]="makingPayment()"
+                   class="block w-full mt-4 text-center py-3 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-900 transition-colors disabled:opacity-70 disabled:cursor-not-allowed">
+                  {{ makingPayment() ? 'Processing...' : 'Make Payment' }}
+                </button>
               }
             </div>
 
@@ -174,6 +174,49 @@ import { Booking } from '../../../../core/models/booking.model';
         </div>
       </div>
     }
+    <!-- Payment Initiation Dialog -->
+    @if (pendingPayment()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-dark rounded-2xl border border-gray-100 dark:border-white/10 p-6 max-w-sm w-full shadow-luxury animate-fade-in">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <span class="material-icons text-xl">payments</span>
+            </div>
+            <h3 class="text-lg font-bold text-dark dark:text-white">Make Payment</h3>
+          </div>
+          <p class="text-gray-600 dark:text-white/70 mb-6">You will be redirected to Chapa to securely complete your payment. Do you want to proceed?</p>
+          <div class="flex items-center justify-end gap-3">
+            <button (click)="pendingPayment.set(false)" class="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+              Cancel
+            </button>
+            <button (click)="confirmMakePayment()" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary-900 transition-colors shadow-sm">
+              Proceed
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Payment Result Alert -->
+    @if (paymentAlert()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-dark rounded-2xl border border-gray-100 dark:border-white/10 p-6 max-w-sm w-full shadow-luxury animate-fade-in">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center"
+                 [class]="paymentAlert()!.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'">
+              <span class="material-icons text-xl">{{ paymentAlert()!.type === 'success' ? 'check_circle' : 'error' }}</span>
+            </div>
+            <h3 class="text-lg font-bold text-dark dark:text-white">{{ paymentAlert()!.type === 'success' ? 'Success' : 'Notice' }}</h3>
+          </div>
+          <p class="text-gray-600 dark:text-white/70 mb-6">{{ paymentAlert()!.message }}</p>
+          <div class="flex justify-end">
+            <button (click)="closePaymentAlert()" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/10 text-dark dark:text-white hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class BookingDetailComponent implements OnInit {
@@ -182,6 +225,10 @@ export class BookingDetailComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly booking = signal<Booking | null>(null);
   readonly loading = signal(true);
+  readonly makingPayment = signal(false);
+  
+  readonly pendingPayment = signal(false);
+  readonly paymentAlert = signal<{type: 'success' | 'error', message: string} | null>(null);
 
   actions = [
     { icon: 'chat', label: 'Message Planner', handler: () => {} },
@@ -190,10 +237,42 @@ export class BookingDetailComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.loadBooking();
+    
+    // Check if returning from Chapa payment
+    const paymentRef = this.route.snapshot.queryParamMap.get('payment_ref');
+    if (paymentRef) {
+      this.verifyPayment(paymentRef);
+    }
+  }
+
+  loadBooking(): void {
     const id = this.route.snapshot.paramMap.get('id')!;
+    this.loading.set(true);
     this.api.get<Booking>(`bookings/${id}`).subscribe({
       next: (b) => { this.booking.set(b); this.loading.set(false); },
       error: () => this.loading.set(false),
+    });
+  }
+
+  verifyPayment(txRef: string): void {
+    // Remove query param from URL without reloading
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    this.api.get<any>(`payments/verify/${txRef}`).subscribe({
+      next: (payment) => {
+        if (payment.status === 'COMPLETED') {
+          this.paymentAlert.set({ type: 'success', message: 'Your payment was successful!' });
+        } else if (payment.status === 'FAILED') {
+          this.paymentAlert.set({ type: 'error', message: 'Your payment failed or was cancelled.' });
+        } else {
+          this.paymentAlert.set({ type: 'error', message: 'Payment is still processing. It may take a moment to update.' });
+        }
+        this.loadBooking(); // Reload booking to show updated amounts
+      },
+      error: () => {
+        this.paymentAlert.set({ type: 'error', message: 'Could not verify payment status.' });
+      }
     });
   }
 
@@ -206,5 +285,44 @@ export class BookingDetailComponent implements OnInit {
       PLANNING: 'bg-purple-50 text-purple-700',
     };
     return m[s] || 'bg-gray-100 text-gray-600';
+  }
+
+  makePayment(): void {
+    this.pendingPayment.set(true);
+  }
+
+  confirmMakePayment(): void {
+    this.pendingPayment.set(false);
+    const b = this.booking();
+    if (!b) return;
+
+    this.makingPayment.set(true);
+    const amount = Number(b.totalAmount) - Number(b.paidAmount);
+
+    this.api.post<any>('payments', {
+      bookingId: b.id,
+      amount,
+      method: 'CHAPA'
+    }).subscribe({
+      next: (payment) => {
+        this.api.post<any>(`payments/${payment.id}/chapa`, {}).subscribe({
+          next: (res) => {
+            window.location.href = res.checkoutUrl;
+          },
+          error: (err) => {
+            this.paymentAlert.set({ type: 'error', message: err?.error?.message || 'Failed to initiate Chapa payment. Please contact support.' });
+            this.makingPayment.set(false);
+          }
+        });
+      },
+      error: (err) => {
+        this.paymentAlert.set({ type: 'error', message: err?.error?.message || 'Failed to create payment.' });
+        this.makingPayment.set(false);
+      }
+    });
+  }
+
+  closePaymentAlert(): void {
+    this.paymentAlert.set(null);
   }
 }
