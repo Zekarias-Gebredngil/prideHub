@@ -9,7 +9,7 @@ import { StarRatingComponent } from '../../../shared/components/star-rating/star
 @Component({
   selector: 'app-testimonials',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, StarRatingComponent],
+  imports: [CommonModule, ReactiveFormsModule, StarRatingComponent],
   template: `
     <section class="pt-32 pb-16" style="background:linear-gradient(135deg,#8B1538,#2B2B2B);">
       <div class="container mx-auto px-4 text-center">

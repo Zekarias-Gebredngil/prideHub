@@ -90,8 +90,8 @@ import { Package } from '../../../../core/models/content.model';
                   </p>
                 }
                 <a routerLink="/book" [queryParams]="{ packageId: pkg()!.id }"
-                   class="block w-full text-center py-4 rounded-xl font-semibold text-white transition-colors hover:opacity-90 mb-3"
-                   [style.background]="pkg()!.color || '#8B1538'">
+                   class="block w-full text-center py-4 rounded-xl font-semibold text-white bg-primary transition-colors hover:opacity-90 mb-3"
+                   [style.background]="pkg()!.color">
                   Book This Package
                 </a>
                 <a routerLink="/contact"

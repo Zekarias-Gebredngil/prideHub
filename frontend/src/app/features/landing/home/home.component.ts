@@ -10,7 +10,7 @@ import { PaginatedResponse } from '../../../core/models/api.model';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, SkeletonLoaderComponent, StarRatingComponent],
+  imports: [CommonModule, RouterLink, SkeletonLoaderComponent],
   template: `
     <!-- ── Hero ─────────────────────────────────────────────────────────── -->
     <section class="relative min-h-screen flex items-center overflow-hidden"
@@ -197,8 +197,8 @@ import { PaginatedResponse } from '../../../core/models/api.model';
                           {{ item.description }}
                         </li>
                       }
-                      @if ((pkg.items?.length ?? 0) > 4) {
-                        <li class="text-xs text-gray-400">+ {{ (pkg.items?.length ?? 0) - 4 }} more inclusions</li>
+                      @if (pkg.items.length > 4) {
+                        <li class="text-xs text-gray-400">+ {{ pkg.items.length - 4 }} more inclusions</li>
                       }
                     </ul>
                   }
@@ -208,9 +208,8 @@ import { PaginatedResponse } from '../../../core/models/api.model';
                     <p class="font-display font-bold text-2xl text-primary">{{ pkg.price | number }} <span class="text-sm font-normal text-gray-500">ETB</span></p>
                   </div>
 
-                  <button class="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold transition-all"
-                          [style.background]="pkg.color || '#8B1538'"
-                          style="color:white">
+                  <button class="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-primary transition-all"
+                          [style.background]="pkg.color">
                     Book This Package
                   </button>
                 </div>

@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-terms',
   standalone: true,
-  imports: [RouterLink],
+  imports: [CommonModule],
   template: `
     <section class="pt-32 pb-12" style="background:linear-gradient(135deg,#8B1538,#2B2B2B);">
       <div class="container mx-auto px-4 text-center">

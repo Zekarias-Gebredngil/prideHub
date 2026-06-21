@@ -64,8 +64,8 @@ import { Package } from '../../../core/models/content.model';
                   </div>
 
                   <a [routerLink]="['/packages', pkg.slug]"
-                     class="block w-full text-center py-3 rounded-xl font-semibold text-white transition-colors"
-                     [style.background]="pkg.color || '#8B1538'">
+                     class="block w-full text-center py-3 rounded-xl font-semibold text-white bg-primary transition-colors"
+                     [style.background]="pkg.color">
                     View Details
                   </a>
                 </div>
