@@ -70,16 +70,39 @@ import { Booking } from '../../../core/models/booking.model';
             </tbody>
           </table>
         </div>
+
+        @if (meta()) {
+          <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+            <div class="text-sm text-gray-500 dark:text-white/50">
+              Showing <span class="font-medium">{{ ((meta()!.page - 1) * meta()!.limit) + 1 }}</span> to 
+              <span class="font-medium">{{ Math.min(meta()!.page * meta()!.limit, meta()!.total) }}</span> of 
+              <span class="font-medium">{{ meta()!.total }}</span> results
+            </div>
+            <div class="flex items-center gap-2">
+              <button [disabled]="!meta()!.hasPrev" (click)="changePage(meta()!.page - 1)"
+                      class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-white/10 transition-colors">
+                Previous
+              </button>
+              <button [disabled]="!meta()!.hasNext" (click)="changePage(meta()!.page + 1)"
+                      class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-white/10 transition-colors">
+                Next
+              </button>
+            </div>
+          </div>
+        }
       </div>
     </div>
   `,
 })
 export class AdminBookingsComponent implements OnInit {
   private readonly api = inject(ApiService);
+  readonly Math = Math;
   readonly bookings = signal<Booking[]>([]);
   readonly stats = signal<any[]>([]);
   readonly loading = signal(true);
+  readonly meta = signal<any>(null);
   statusFilter = '';
+  page = 1;
   statuses = ['PENDING', 'CONFIRMED', 'PLANNING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 
   ngOnInit(): void {
@@ -94,12 +117,21 @@ export class AdminBookingsComponent implements OnInit {
     this.load();
   }
 
+  changePage(newPage: number): void {
+    this.page = newPage;
+    this.load();
+  }
+
   load(): void {
     this.loading.set(true);
-    const params: any = { limit: 100 };
+    const params: any = { limit: 10, page: this.page };
     if (this.statusFilter) params['status'] = this.statusFilter;
     this.api.getPaginated<Booking>('bookings', params).subscribe({
-      next: (res) => { this.bookings.set(res.data); this.loading.set(false); },
+      next: (res) => { 
+        this.bookings.set(res.data); 
+        this.meta.set(res.meta);
+        this.loading.set(false); 
+      },
       error: () => this.loading.set(false),
     });
   }
