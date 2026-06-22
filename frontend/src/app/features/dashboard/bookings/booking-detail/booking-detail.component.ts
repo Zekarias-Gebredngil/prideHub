@@ -246,12 +246,12 @@ export class BookingDetailComponent implements OnInit {
     }
   }
 
-  loadBooking(): void {
+  loadBooking(silent = false): void {
     const id = this.route.snapshot.paramMap.get('id')!;
-    this.loading.set(true);
+    if (!silent) this.loading.set(true);
     this.api.get<Booking>(`bookings/${id}`).subscribe({
-      next: (b) => { this.booking.set(b); this.loading.set(false); },
-      error: () => this.loading.set(false),
+      next: (b) => { this.booking.set(b); if (!silent) this.loading.set(false); },
+      error: () => { if (!silent) this.loading.set(false); },
     });
   }
 
@@ -268,7 +268,7 @@ export class BookingDetailComponent implements OnInit {
         } else {
           this.paymentAlert.set({ type: 'error', message: 'Payment is still processing. It may take a moment to update.' });
         }
-        this.loadBooking(); // Reload booking to show updated amounts
+        this.loadBooking(true); // Reload booking silently to show updated amounts
       },
       error: () => {
         this.paymentAlert.set({ type: 'error', message: 'Could not verify payment status.' });
