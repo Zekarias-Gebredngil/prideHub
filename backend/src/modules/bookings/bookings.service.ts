@@ -17,6 +17,18 @@ export class BookingsService {
   }
 
   async create(clientId: string, dto: CreateBookingDto) {
+    let totalAmount = 0;
+
+    if (dto.packageId) {
+      const pkg = await this.prisma.package.findUnique({ where: { id: dto.packageId } });
+      if (pkg) {
+        const discount = pkg.discountPct ? Number(pkg.discountPct) : 0;
+        totalAmount = Number(pkg.price) * (1 - discount / 100);
+      }
+    } else if (dto.budgetMax) {
+      totalAmount = dto.budgetMax;
+    }
+
     return this.prisma.booking.create({
       data: {
         bookingNumber: this.generateBookingNumber(),
@@ -29,6 +41,7 @@ export class BookingsService {
         budgetMin: dto.budgetMin,
         budgetMax: dto.budgetMax,
         specialRequests: dto.specialRequests,
+        totalAmount,
       },
       include: { package: true, venue: true },
     });

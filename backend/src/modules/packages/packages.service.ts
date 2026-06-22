@@ -1,22 +1,104 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PartialType } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import slugify from 'slugify';
 
-export class CreatePackageDto {
-  name: string;
-  tier: string;
-  description?: string;
-  shortDesc?: string;
-  price: number;
-  discountPct?: number;
-  isFeatured?: boolean;
-  maxGuests?: number;
-  duration?: string;
-  color?: string;
-  items?: { description: string; isIncluded: boolean }[];
-  addOns?: { name: string; price: number }[];
+export class PackageItemDto {
+  @IsString()
+  description: string;
+
+  @IsBoolean()
+  isIncluded: boolean;
 }
+
+export class PackageAddOnDto {
+  @IsString()
+  @MaxLength(200)
+  name: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  price: number;
+}
+
+export class CreatePackageDto {
+  @IsString()
+  @MaxLength(200)
+  name: string;
+
+  @IsString()
+  @MaxLength(50)
+  tier: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  shortDesc?: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  discountPct?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isFeatured?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  maxGuests?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  duration?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  color?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PackageItemDto)
+  items?: PackageItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PackageAddOnDto)
+  addOns?: PackageAddOnDto[];
+}
+
+export class UpdatePackageDto extends PartialType(CreatePackageDto) {}
 
 @Injectable()
 export class PackagesService {
@@ -78,13 +160,28 @@ export class PackagesService {
     return pkg;
   }
 
-  async update(id: string, dto: Partial<CreatePackageDto>) {
+  async update(id: string, dto: UpdatePackageDto) {
     const pkg = await this.prisma.package.findFirst({ where: { id, deletedAt: null } });
     if (!pkg) throw new NotFoundException('Package not found');
     const { items, addOns, ...rest } = dto;
     return this.prisma.package.update({
       where: { id },
-      data: { ...rest, slug: dto.name ? this.makeSlug(dto.name) : undefined },
+      data: { 
+        ...rest, 
+        slug: dto.name ? this.makeSlug(dto.name) : undefined,
+        ...(items !== undefined && {
+          items: {
+            deleteMany: {},
+            createMany: { data: items.map((i, idx) => ({ ...i, sortOrder: idx })) }
+          }
+        }),
+        ...(addOns !== undefined && {
+          addOns: {
+            deleteMany: {},
+            createMany: { data: addOns }
+          }
+        }),
+      },
       include: { items: true, addOns: true },
     });
   }

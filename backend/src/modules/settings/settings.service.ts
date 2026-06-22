@@ -1,5 +1,36 @@
 import { Injectable } from '@nestjs/common';
+import { Type } from 'class-transformer';
+import { Allow, IsArray, IsBoolean, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
+
+export class SetSettingDto {
+  @IsString()
+  @MaxLength(150)
+  key: string;
+
+  @Allow()
+  value: unknown;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  group?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+}
+
+export class BulkSetSettingsDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SetSettingDto)
+  settings: SetSettingDto[];
+}
 
 @Injectable()
 export class SettingsService {
@@ -25,7 +56,7 @@ export class SettingsService {
     });
   }
 
-  async setMany(settings: { key: string; value: unknown; group?: string }[]) {
+  async setMany(settings: SetSettingDto[]) {
     return Promise.all(settings.map((s) => this.set(s.key, s.value, s.group)));
   }
 }

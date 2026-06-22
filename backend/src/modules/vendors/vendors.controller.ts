@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { VendorsService, CreateVendorProfileDto } from './vendors.service';
+import { VendorsService, CreateVendorProfileDto, UpdateVendorProfileDto } from './vendors.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -39,7 +39,7 @@ export class VendorsController {
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateVendorProfileDto>) {
+  update(@Param('id') id: string, @Body() dto: UpdateVendorProfileDto) {
     return this.vendorsService.update(id, dto);
   }
 

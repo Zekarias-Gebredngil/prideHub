@@ -1,27 +1,69 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PartialType } from '@nestjs/swagger';
+import { IsArray, IsEmail, IsEnum, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import { BlogStatus } from '@prisma/client';
 import slugify from 'slugify';
 
 export class CreateBlogPostDto {
+  @IsString()
+  @MaxLength(250)
   title: string;
+
+  @IsString()
   content: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
   excerpt?: string;
+
+  @IsOptional()
+  @IsUUID()
   categoryId?: string;
+
+  @IsOptional()
+  @IsEnum(BlogStatus)
   status?: BlogStatus;
+
+  @IsOptional()
+  @IsString()
   scheduledAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
   seoTitle?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
   seoDesc?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
   tags?: string[];
 }
 
 export class CreateBlogCommentDto {
+  @IsString()
+  @MaxLength(150)
   authorName: string;
+
+  @IsEmail()
   authorEmail: string;
+
+  @IsString()
   content: string;
+
+  @IsOptional()
+  @IsUUID()
   parentId?: string;
 }
+
+export class UpdateBlogPostDto extends PartialType(CreateBlogPostDto) {}
 
 @Injectable()
 export class BlogService {
@@ -123,7 +165,7 @@ export class BlogService {
     });
   }
 
-  async update(id: string, dto: Partial<CreateBlogPostDto>) {
+  async update(id: string, dto: UpdateBlogPostDto) {
     const post = await this.prisma.blogPost.findFirst({ where: { id, deletedAt: null } });
     if (!post) throw new NotFoundException('Post not found');
     const { tags, ...rest } = dto;

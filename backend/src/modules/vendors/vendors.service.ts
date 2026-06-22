@@ -1,19 +1,54 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PartialType } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsNumber, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import slugify from 'slugify';
 
 export class CreateVendorProfileDto {
+  @IsString()
+  @MaxLength(200)
   businessName: string;
+
+  @IsUUID()
   categoryId: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
   bio?: string;
+
+  @IsOptional()
+  @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
   website?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   basePrice?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
   priceUnit?: string;
 }
+
+export class UpdateVendorProfileDto extends PartialType(CreateVendorProfileDto) {}
 
 @Injectable()
 export class VendorsService {
@@ -88,7 +123,7 @@ export class VendorsService {
     });
   }
 
-  async update(id: string, dto: Partial<CreateVendorProfileDto>) {
+  async update(id: string, dto: UpdateVendorProfileDto) {
     const vendor = await this.prisma.vendorProfile.findFirst({ where: { id, deletedAt: null } });
     if (!vendor) throw new NotFoundException('Vendor not found');
     return this.prisma.vendorProfile.update({ where: { id }, data: dto });

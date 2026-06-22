@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { SettingsService } from './settings.service';
+import { SetSettingDto, SettingsService } from './settings.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -23,14 +23,14 @@ export class SettingsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   @Post()
-  set(@Body() dto: { key: string; value: unknown; group?: string; description?: string; isPublic?: boolean }) {
+  set(@Body() dto: SetSettingDto) {
     return this.settingsService.set(dto.key, dto.value, dto.group, dto.description, dto.isPublic);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   @Post('bulk')
-  setMany(@Body() settings: { key: string; value: unknown; group?: string }[]) {
+  setMany(@Body() settings: SetSettingDto[]) {
     return this.settingsService.setMany(settings);
   }
 }

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { BlogService, CreateBlogCommentDto, CreateBlogPostDto } from './blog.service';
+import { BlogService, CreateBlogCommentDto, CreateBlogPostDto, UpdateBlogPostDto } from './blog.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -47,7 +47,7 @@ export class BlogController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.EVENT_PLANNER)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateBlogPostDto>) {
+  update(@Param('id') id: string, @Body() dto: UpdateBlogPostDto) {
     return this.blogService.update(id, dto);
   }
 

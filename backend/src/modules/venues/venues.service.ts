@@ -1,26 +1,92 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PartialType } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsNumber, IsObject, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import slugify from 'slugify';
 
 export class CreateVenueDto {
+  @IsString()
+  @MaxLength(200)
   name: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
   shortDesc?: string;
+
+  @IsOptional()
+  @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   country?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   latitude?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   longitude?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
   googleMapsUrl?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   capacity?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   minCapacity?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   pricePerDay?: number;
+
+  @IsOptional()
+  @IsObject()
   amenities?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsBoolean()
   isFeatured?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
   seoTitle?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
   seoDesc?: string;
 }
+
+export class UpdateVenueDto extends PartialType(CreateVenueDto) {}
 
 @Injectable()
 export class VenuesService {
@@ -95,7 +161,7 @@ export class VenuesService {
     return venue;
   }
 
-  async update(id: string, dto: Partial<CreateVenueDto>) {
+  async update(id: string, dto: UpdateVenueDto) {
     const venue = await this.prisma.venue.findFirst({ where: { id, deletedAt: null } });
     if (!venue) throw new NotFoundException('Venue not found');
     return this.prisma.venue.update({

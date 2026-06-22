@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { ServicesService, CreateServiceDto } from './services.service';
+import { ServicesService, CreateServiceDto, UpdateServiceDto } from './services.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -55,7 +55,7 @@ export class ServicesController {
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @Patch(':id')
   @ApiOperation({ summary: 'Update service' })
-  update(@Param('id') id: string, @Body() dto: Partial<CreateServiceDto>) {
+  update(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
     return this.servicesService.update(id, dto);
   }
 
