@@ -49,6 +49,12 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Get payments by booking' })
   getByBooking(@Param('bookingId') id: string) { return this.paymentsService.getPaymentsByBooking(id); }
 
+  @Get('invoices/booking/:bookingId')
+  @ApiOperation({ summary: 'Get invoices by booking' })
+  getInvoicesByBooking(@Param('bookingId') bookingId: string) {
+    return this.paymentsService.getInvoicesByBooking(bookingId);
+  }
+
   @Patch(':id/confirm')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Confirm payment' })

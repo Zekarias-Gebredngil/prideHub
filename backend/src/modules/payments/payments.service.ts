@@ -120,7 +120,17 @@ export class PaymentsService {
   async getInvoicesByBooking(bookingId: string) {
     return this.prisma.invoice.findMany({
       where: { bookingId },
-      include: { payments: true },
+      include: {
+        payments: { orderBy: { createdAt: 'desc' } },
+        booking: {
+          include: {
+            client: { select: { fullName: true, email: true, phone: true } },
+            venue: { select: { name: true, city: true, address: true } },
+            package: { select: { name: true, tier: true } },
+            items: { include: { service: { select: { name: true } }, vendor: { select: { businessName: true } } } },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

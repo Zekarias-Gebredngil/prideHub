@@ -28,7 +28,7 @@ export interface Booking {
   internalNotes?: string;
   createdAt: string;
   updatedAt: string;
-  client?: { id: string; fullName: string; email: string; avatar?: string };
+  client?: { id: string; fullName: string; email: string; avatar?: string; phone?: string };
   planner?: { id: string; fullName: string; email: string };
   package?: { id: string; name: string; tier: string };
   venue?: { id: string; name: string; city: string };
@@ -75,6 +75,7 @@ export interface Payment {
   status: PaymentStatus;
   transactionRef?: string;
   paidAt?: string;
+  createdAt?: string;
 }
 
 export interface Task {

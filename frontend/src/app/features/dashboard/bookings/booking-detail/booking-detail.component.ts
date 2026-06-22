@@ -244,11 +244,198 @@ export class BookingDetailComponent implements OnInit {
   downloadInvoice() {
     const booking = this.booking();
     if (!booking) return;
-    const invoice = booking.invoices?.[0];
-    if (invoice?.pdfUrl) {
-      window.open(invoice.pdfUrl, '_blank');
+
+    // Check if there are any completed payments
+    const completedPayments = booking.payments?.filter(p => p.status === 'COMPLETED') ?? [];
+    if (completedPayments.length === 0) {
+      this.paymentAlert.set({ type: 'error', message: 'No completed payments found. Invoice is only available after a successful payment.' });
+      return;
+    }
+
+    const totalPaid = completedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+    const remaining = Number(booking.totalAmount) - Number(booking.paidAmount);
+    const isFullyPaid = remaining <= 0;
+    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const eventDateStr = new Date(booking.eventDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const paymentRows = completedPayments.map(p => `
+      <tr>
+        <td>${new Date(p.paidAt ?? p.createdAt ?? '').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+        <td>${p.method}</td>
+        <td>${p.transactionRef ?? '-'}</td>
+        <td class="amount">ETB ${Number(p.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+      </tr>
+    `).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice – ${booking.bookingNumber}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; background: #fff; font-size: 13px; }
+    .page { max-width: 820px; margin: 0 auto; padding: 48px 52px; }
+    /* Header */
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 28px; border-bottom: 3px solid #7c3aed; }
+    .brand { display: flex; flex-direction: column; gap: 4px; }
+    .brand-name { font-size: 28px; font-weight: 800; color: #7c3aed; letter-spacing: -0.5px; }
+    .brand-tagline { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+    .invoice-label { text-align: right; }
+    .invoice-label .title { font-size: 22px; font-weight: 700; color: #1a1a2e; text-transform: uppercase; letter-spacing: 2px; }
+    .invoice-label .number { font-size: 13px; color: #7c3aed; font-weight: 600; margin-top: 4px; }
+    .invoice-label .date { font-size: 11px; color: #6b7280; margin-top: 2px; }
+    /* Status badge */
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; }
+    .status-paid { background: #d1fae5; color: #065f46; }
+    .status-partial { background: #fef3c7; color: #92400e; }
+    /* Parties */
+    .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 36px; }
+    .party-block h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #9ca3af; margin-bottom: 10px; font-weight: 600; }
+    .party-block p { font-size: 13px; color: #374151; line-height: 1.6; }
+    .party-block .name { font-weight: 700; font-size: 15px; color: #1a1a2e; margin-bottom: 2px; }
+    /* Event info box */
+    .event-box { background: #f5f3ff; border-left: 4px solid #7c3aed; border-radius: 8px; padding: 16px 20px; margin-bottom: 32px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .event-box .item label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #7c3aed; font-weight: 600; display: block; margin-bottom: 4px; }
+    .event-box .item span { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+    /* Table */
+    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #9ca3af; font-weight: 600; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
+    table thead tr { background: #7c3aed; color: #fff; }
+    table thead th { padding: 10px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+    table thead th.amount { text-align: right; }
+    table tbody tr { border-bottom: 1px solid #f3f4f6; }
+    table tbody tr:last-child { border-bottom: none; }
+    table tbody td { padding: 10px 14px; color: #374151; font-size: 13px; }
+    table tbody td.amount { text-align: right; font-weight: 600; }
+    /* Summary */
+    .summary { display: flex; justify-content: flex-end; margin-bottom: 36px; }
+    .summary-box { width: 280px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row.total { font-weight: 700; font-size: 15px; padding-top: 12px; color: #1a1a2e; }
+    .summary-row.paid { color: #059669; font-weight: 600; }
+    .summary-row.remaining { color: ${isFullyPaid ? '#059669' : '#d97706'}; font-weight: 600; }
+    /* Footer */
+    .footer { border-top: 1px solid #e5e7eb; padding-top: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .footer p { font-size: 11px; color: #9ca3af; }
+    .footer .thank-you { font-size: 13px; font-weight: 600; color: #7c3aed; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { padding: 32px 40px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- Header -->
+    <div class="header">
+      <div class="brand">
+        <div class="brand-name">PrideHub</div>
+        <div class="brand-tagline">Event Management Platform</div>
+        <div style="margin-top:8px;font-size:11px;color:#6b7280;">
+          Addis Ababa, Ethiopia<br>
+          contact@pridehub.com
+        </div>
+      </div>
+      <div class="invoice-label">
+        <div class="title">Invoice</div>
+        <div class="number">${booking.bookingNumber}</div>
+        <div class="date">Issued: ${dateStr}</div>
+        <div>
+          <span class="status-badge ${isFullyPaid ? 'status-paid' : 'status-partial'}">
+            ${isFullyPaid ? 'Paid in Full' : 'Partially Paid'}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parties -->
+    <div class="parties">
+      <div class="party-block">
+        <h3>Bill To</h3>
+        <p class="name">${booking.client?.fullName ?? 'Client'}</p>
+        <p>${booking.client?.email ?? ''}</p>
+        ${booking.client?.phone ? `<p>${booking.client.phone}</p>` : ''}
+      </div>
+      <div class="party-block">
+        <h3>Service Provider</h3>
+        <p class="name">PrideHub Events</p>
+        <p>contact@pridehub.com</p>
+        <p>Addis Ababa, Ethiopia</p>
+      </div>
+    </div>
+
+    <!-- Event Info -->
+    <div class="event-box">
+      <div class="item">
+        <label>Event Type</label>
+        <span>${booking.eventType.replace(/_/g, ' ')}</span>
+      </div>
+      <div class="item">
+        <label>Event Date</label>
+        <span>${eventDateStr}</span>
+      </div>
+      ${booking.venue ? `<div class="item"><label>Venue</label><span>${booking.venue.name}, ${booking.venue.city}</span></div>` :
+        booking.guestCount ? `<div class="item"><label>Guests</label><span>${booking.guestCount} guests</span></div>` : ''}
+    </div>
+
+    <!-- Payment History -->
+    <div class="section-title">Payment History</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Method</th>
+          <th>Reference</th>
+          <th class="amount">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${paymentRows}
+      </tbody>
+    </table>
+
+    <!-- Summary -->
+    <div class="summary">
+      <div class="summary-box">
+        <div class="summary-row">
+          <span>Total Amount</span>
+          <span>ETB ${Number(booking.totalAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+        </div>
+        <div class="summary-row paid">
+          <span>Total Paid</span>
+          <span>ETB ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+        </div>
+        <div class="summary-row remaining">
+          <span>${isFullyPaid ? '✓ Fully Paid' : 'Balance Due'}</span>
+          <span>ETB ${Math.max(0, remaining).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>
+        Thank you for choosing PrideHub.<br>
+        This is a computer-generated invoice and requires no signature.
+      </p>
+      <div class="thank-you">🎉 Making your events unforgettable</div>
+    </div>
+  </div>
+  <script>window.onload = () => { window.print(); }</script>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (win) {
+      win.onafterprint = () => URL.revokeObjectURL(url);
     } else {
-      this.paymentAlert.set({ type: 'error', message: 'Invoice PDF is not available yet.' });
+      URL.revokeObjectURL(url);
+      this.paymentAlert.set({ type: 'error', message: 'Please allow popups to download the invoice.' });
     }
   }
 
