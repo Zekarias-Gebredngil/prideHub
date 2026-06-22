@@ -2,12 +2,33 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 
+import { IsString, IsOptional, IsInt, Min, Max, MaxLength } from 'class-validator';
+
 export class CreateTestimonialDto {
+  @IsString()
+  @MaxLength(255)
   clientName: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
   clientTitle?: string;
+
+  @IsOptional()
+  @IsString()
   avatar?: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(5)
   rating: number;
+
+  @IsString()
   content: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   eventType?: string;
 }
 

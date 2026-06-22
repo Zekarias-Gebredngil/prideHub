@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiPropertyOptional } from '@nestjs/swagger';
 import { BlogService, CreateBlogCommentDto, CreateBlogPostDto, UpdateBlogPostDto } from './blog.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -8,6 +8,19 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, JwtUser } from '../../common/decorators/current-user.decorator';
 import { UserRole, BlogStatus } from '@prisma/client';
+import { IsOptional, IsString } from 'class-validator';
+
+export class BlogQueryDto extends PaginationDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  status?: BlogStatus | 'ALL';
+}
 
 @ApiTags('Blog')
 @Controller('blog')
@@ -15,8 +28,8 @@ export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
   @Public() @Get()
-  findAll(@Query() dto: PaginationDto, @Query('categoryId') cat?: string, @Query('status') status?: BlogStatus | 'ALL') {
-    return this.blogService.findAll(dto, cat, status);
+  findAll(@Query() dto: BlogQueryDto) {
+    return this.blogService.findAll(dto, dto.categoryId, dto.status);
   }
 
   @Public() @Get('categories')

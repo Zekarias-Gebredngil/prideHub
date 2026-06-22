@@ -2,13 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 // Purple brand colour
-const PURPLE = rgb(0.486, 0.227, 0.929);  // #7c3aed
-const DARK   = rgb(0.102, 0.102, 0.18);   // #1a1a2e
-const GRAY   = rgb(0.42, 0.447, 0.502);   // #6b7280
-const GREEN  = rgb(0.035, 0.627, 0.427);  // #059669
-const AMBER  = rgb(0.855, 0.6, 0.086);    // #d97706
-const WHITE  = rgb(1, 1, 1);
-const LIGHT  = rgb(0.96, 0.96, 0.97);     // near-white row stripe
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Brand colours
+const BRAND_PRIMARY = rgb(139 / 255, 21 / 255, 56 / 255); // #8B1538 (PrideHub Red)
+const BRAND_SECONDARY = rgb(217 / 255, 160 / 255, 91 / 255); // #D9A05B (Gold)
+const DARK = rgb(0.102, 0.102, 0.18);   // #1a1a2e
+const GRAY = rgb(0.42, 0.447, 0.502);   // #6b7280
+const GREEN = rgb(0.035, 0.627, 0.427);  // #059669
+const WHITE = rgb(1, 1, 1);
+const LIGHT = rgb(0.96, 0.96, 0.97);     // near-white row stripe
 
 function fmt(n: number) {
   return `ETB ${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -17,16 +21,16 @@ function fmt(n: number) {
 @Injectable()
 export class InvoicePdfService {
   async generate(booking: any): Promise<Buffer> {
-    const doc  = await PDFDocument.create();
+    const doc = await PDFDocument.create();
     const page = doc.addPage([595, 842]); // A4
     const { width, height } = page.getSize();
 
-    const boldFont   = await doc.embedFont(StandardFonts.HelveticaBold);
+    const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
     const normalFont = await doc.embedFont(StandardFonts.Helvetica);
-    const oblique    = await doc.embedFont(StandardFonts.HelveticaOblique);
+    const oblique = await doc.embedFont(StandardFonts.HelveticaOblique);
 
     let y = height - 40;
-    const left  = 48;
+    const left = 48;
     const right = width - 48;
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -47,34 +51,55 @@ export class InvoicePdfService {
       page.drawRectangle({ x, y: yPos, width: w, height: h, color });
     };
 
-    // ── Purple top bar ─────────────────────────────────────────────────────────
-    rect(0, height - 6, width, 6, PURPLE);
+    // ── Primary top bar ─────────────────────────────────────────────────────────
+    rect(0, height - 6, width, 6, BRAND_PRIMARY);
 
     // ── Header ─────────────────────────────────────────────────────────────────
     y = height - 54;
-    text('PrideHub', left, y, { size: 26, bold: true, color: PURPLE });
-    text('Event Management Platform', left, y - 16, { size: 9, color: GRAY });
-    text('Addis Ababa, Ethiopia  ·  contact@pridehub.com', left, y - 28, { size: 9, color: GRAY });
+    let logoWidth = 0;
+    try {
+      const logoPath = path.join(process.cwd(), 'assets', 'logo.png');
+      if (fs.existsSync(logoPath)) {
+        const logoBytes = fs.readFileSync(logoPath);
+        const logoImage = await doc.embedPng(logoBytes);
+        const dims = logoImage.scale(0.18); // Scale down
+        logoWidth = dims.width;
+        page.drawImage(logoImage, {
+          x: left,
+          y: y - 24, // adjust to align with text
+          width: dims.width,
+          height: dims.height,
+        });
+      }
+    } catch (e) {
+      console.error('Failed to embed logo', e);
+    }
+
+    const brandX = left + (logoWidth > 0 ? logoWidth + 12 : 0);
+
+    text('PrideHub', brandX, y, { size: 26, bold: true, color: BRAND_PRIMARY });
+    text('Event Management Platform', brandX, y - 16, { size: 9, color: GRAY });
+    text('Addis Ababa, Ethiopia  ·  contact@pridehub.com', brandX, y - 28, { size: 9, color: GRAY });
 
     // Invoice label (right side)
     text('INVOICE', right - 100, y, { size: 20, bold: true, color: DARK });
-    text(`#${booking.bookingNumber}`, right - 100, y - 16, { size: 10, bold: true, color: PURPLE });
+    text(`#${booking.bookingNumber}`, right - 100, y - 16, { size: 10, bold: true, color: BRAND_PRIMARY });
     const issueDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     text(`Issued: ${issueDate}`, right - 100, y - 29, { size: 9, color: GRAY });
 
     // Status badge
     const completedPmts = (booking.payments ?? []).filter((p: any) => p.status === 'COMPLETED');
-    const totalPaid    = completedPmts.reduce((s: number, p: any) => s + Number(p.amount), 0);
-    const remaining    = Number(booking.totalAmount) - Number(booking.paidAmount);
-    const isFullyPaid  = remaining <= 0;
-    const badgeText    = isFullyPaid ? 'PAID IN FULL' : 'PARTIALLY PAID';
-    const badgeColor   = isFullyPaid ? rgb(0.816, 0.976, 0.894) : rgb(0.996, 0.953, 0.78);
-    const badgeTxtClr  = isFullyPaid ? GREEN : AMBER;
+    const totalPaid = completedPmts.reduce((s: number, p: any) => s + Number(p.amount), 0);
+    const remaining = Number(booking.totalAmount) - Number(booking.paidAmount);
+    const isFullyPaid = remaining <= 0;
+    const badgeText = isFullyPaid ? 'PAID IN FULL' : 'PARTIALLY PAID';
+    const badgeColor = isFullyPaid ? rgb(0.816, 0.976, 0.894) : rgb(0.996, 0.953, 0.78);
+    const badgeTxtClr = isFullyPaid ? GREEN : BRAND_SECONDARY;
     rect(right - 102, y - 52, 102, 18, badgeColor);
     text(badgeText, right - 97, y - 47, { size: 8, bold: true, color: badgeTxtClr });
 
     y -= 60;
-    line(left, y, right, y, 1, PURPLE);
+    line(left, y, right, y, 1, BRAND_PRIMARY);
     y -= 24;
 
     // ── Parties ────────────────────────────────────────────────────────────────
@@ -100,21 +125,21 @@ export class InvoicePdfService {
     y -= 20;
 
     // ── Event info box ─────────────────────────────────────────────────────────
-    rect(left, y - 46, right - left, 56, rgb(0.965, 0.957, 1));
-    page.drawRectangle({ x: left, y: y - 46, width: 4, height: 56, color: PURPLE });
+    rect(left, y - 46, right - left, 56, rgb(0.98, 0.95, 0.96)); // soft primary tint
+    page.drawRectangle({ x: left, y: y - 46, width: 4, height: 56, color: BRAND_PRIMARY });
 
     const eventDate = new Date(booking.eventDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const colW = (right - left - 4) / 3;
 
     const infoCol = (label: string, val: string, colX: number) => {
-      text(label, colX + 12, y - 4, { size: 8, bold: true, color: PURPLE });
+      text(label, colX + 12, y - 4, { size: 8, bold: true, color: BRAND_PRIMARY });
       text(val, colX + 12, y - 18, { size: 10, bold: true });
     };
 
     infoCol('EVENT TYPE', (booking.eventType ?? '').replace(/_/g, ' '), left);
     infoCol('EVENT DATE', eventDate, left + colW);
     const thirdVal = booking.venue ? `${booking.venue.name}, ${booking.venue.city}` :
-                     booking.guestCount ? `${booking.guestCount} guests` : '';
+      booking.guestCount ? `${booking.guestCount} guests` : '';
     const thirdLabel = booking.venue ? 'VENUE' : booking.guestCount ? 'GUESTS' : '';
     if (thirdLabel) infoCol(thirdLabel, thirdVal, left + colW * 2);
 
@@ -130,7 +155,7 @@ export class InvoicePdfService {
     const colRef = left + 210;
     const colAmt = right - 10;
 
-    rect(left, y - 18, right - left, 24, PURPLE);
+    rect(left, y - 18, right - left, 24, BRAND_PRIMARY);
     text('DATE', colDate + 6, y - 11, { size: 9, bold: true, color: WHITE });
     text('METHOD', colMethod, y - 11, { size: 9, bold: true, color: WHITE });
     text('REFERENCE', colRef, y - 11, { size: 9, bold: true, color: WHITE });
@@ -178,7 +203,7 @@ export class InvoicePdfService {
     line(summaryX, y + 4, summaryX + summaryW, y + 4, 0.3, rgb(0.85, 0.85, 0.88));
     summaryRow('Total Paid', fmt(totalPaid), GREEN, true);
     line(summaryX, y + 4, summaryX + summaryW, y + 4, 0.3, rgb(0.85, 0.85, 0.88));
-    summaryRow(isFullyPaid ? 'Fully Paid' : 'Balance Due', fmt(Math.max(0, remaining)), isFullyPaid ? GREEN : AMBER, true);
+    summaryRow(isFullyPaid ? 'Fully Paid' : 'Balance Due', fmt(Math.max(0, remaining)), isFullyPaid ? GREEN : BRAND_SECONDARY, true);
 
     y -= 36;
 
@@ -186,10 +211,9 @@ export class InvoicePdfService {
     line(left, y, right, y, 0.5);
     y -= 16;
     text('Thank you for choosing PrideHub Events. Making your events unforgettable.', left, y, { size: 9, color: GRAY, italic: true });
-    text('This is a computer-generated document and does not require a signature.', left, y - 13, { size: 9, color: GRAY });
 
-    // Bottom purple bar
-    rect(0, 0, width, 5, PURPLE);
+    // Bottom primary bar
+    rect(0, 0, width, 5, BRAND_PRIMARY);
 
     const pdfBytes = await doc.save();
     return Buffer.from(pdfBytes);
