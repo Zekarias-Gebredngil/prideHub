@@ -1,6 +1,6 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -167,6 +167,18 @@ import { AuthService } from '../../core/services/auth.service';
                     <span class="font-medium text-dark dark:text-white">{{ getPackageName() }}</span>
                   </div>
                 }
+                @if (venue()) {
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Selected Venue</span>
+                    <span class="font-medium text-dark dark:text-white">{{ venue().name }}</span>
+                  </div>
+                }
+                @if (vendor()) {
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Selected Vendor</span>
+                    <span class="font-medium text-dark dark:text-white">{{ vendor().businessName }}</span>
+                  </div>
+                }
               </div>
 
               <div class="p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm text-primary">
@@ -235,7 +247,13 @@ export class BookingFlowComponent {
   private readonly api = inject(ApiService);
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
+
+  readonly venueId = signal<string | null>(null);
+  readonly vendorId = signal<string | null>(null);
+  readonly venue = signal<any>(null);
+  readonly vendor = signal<any>(null);
 
   readonly step = signal(1);
   readonly packages = signal<any[]>([]);
@@ -278,6 +296,19 @@ export class BookingFlowComponent {
     });
   }
 
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      if (params['venueId']) {
+        this.venueId.set(params['venueId']);
+        this.api.get<any>(`venues/${params['venueId']}`).subscribe(v => this.venue.set(v));
+      }
+      if (params['vendorId']) {
+        this.vendorId.set(params['vendorId']);
+        this.api.get<any>(`vendors/${params['vendorId']}`).subscribe(v => this.vendor.set(v));
+      }
+    });
+  }
+
   next(): void { this.step.update(s => s + 1); }
   prev(): void { this.step.update(s => s - 1); }
 
@@ -292,6 +323,8 @@ export class BookingFlowComponent {
       packageId: this.selectedPackageId() && this.selectedPackageId() !== 'custom'
         ? this.selectedPackageId()
         : undefined,
+      venueId: this.venueId(),
+      vendorId: this.vendorId(),
     };
     this.api.post<any>('bookings', payload).subscribe({
       next: (b) => {

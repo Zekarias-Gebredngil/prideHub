@@ -42,6 +42,17 @@ export class BookingsService {
         budgetMax: dto.budgetMax,
         specialRequests: dto.specialRequests,
         totalAmount,
+        ...(dto.vendorId ? {
+          items: {
+            create: [{
+              vendorId: dto.vendorId,
+              name: 'Vendor Service Request',
+              quantity: 1,
+              unitPrice: 0,
+              totalPrice: 0,
+            }]
+          }
+        } : {}),
       },
       include: { package: true, venue: true },
     });

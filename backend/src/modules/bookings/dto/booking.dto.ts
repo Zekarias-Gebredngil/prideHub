@@ -26,6 +26,11 @@ export class CreateBookingDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsUUID()
+  vendorId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsInt()
   @Min(1)
   guestCount?: number;

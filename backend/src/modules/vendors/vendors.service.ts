@@ -97,8 +97,12 @@ export class VendorsService {
   }
 
   async findBySlug(slug: string) {
+    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
     const vendor = await this.prisma.vendorProfile.findFirst({
-      where: { slug, deletedAt: null },
+      where: {
+        ...(isId ? { id: slug } : { slug }),
+        deletedAt: null
+      },
       include: {
         category: true,
         user: { select: { id: true, fullName: true, email: true, avatar: true } },

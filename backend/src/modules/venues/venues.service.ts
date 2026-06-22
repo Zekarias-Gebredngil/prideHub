@@ -144,8 +144,12 @@ export class VenuesService {
   }
 
   async findBySlug(slug: string) {
+    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
     const venue = await this.prisma.venue.findFirst({
-      where: { slug, deletedAt: null },
+      where: {
+        ...(isId ? { id: slug } : { slug }),
+        deletedAt: null
+      },
       include: {
         media: true,
         reviews: {

@@ -62,6 +62,7 @@ export interface Invoice {
   status: PaymentStatus;
   dueDate?: string;
   paidAt?: string;
+  pdfUrl?: string;
 }
 
 export interface Payment {

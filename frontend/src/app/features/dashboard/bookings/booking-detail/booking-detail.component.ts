@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, ActivatedRoute } from '@angular/router';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../../../core/services/api.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { Booking } from '../../../../core/models/booking.model';
@@ -222,6 +222,7 @@ import { Booking } from '../../../../core/models/booking.model';
 export class BookingDetailComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly auth = inject(AuthService);
   readonly booking = signal<Booking | null>(null);
   readonly loading = signal(true);
@@ -231,10 +232,39 @@ export class BookingDetailComponent implements OnInit {
   readonly paymentAlert = signal<{type: 'success' | 'error', message: string} | null>(null);
 
   actions = [
-    { icon: 'chat', label: 'Message Planner', handler: () => {} },
-    { icon: 'download', label: 'Download Invoice', handler: () => {} },
-    { icon: 'share', label: 'Share Booking', handler: () => {} },
+    { icon: 'chat', label: 'Message Planner', handler: () => this.messagePlanner() },
+    { icon: 'download', label: 'Download Invoice', handler: () => this.downloadInvoice() },
+    { icon: 'share', label: 'Share Booking', handler: () => this.shareBooking() },
   ];
+
+  messagePlanner() {
+    this.router.navigate(['/dashboard/messages'], { queryParams: { bookingId: this.booking()?.id } });
+  }
+
+  downloadInvoice() {
+    const booking = this.booking();
+    if (!booking) return;
+    const invoice = booking.invoices?.[0];
+    if (invoice?.pdfUrl) {
+      window.open(invoice.pdfUrl, '_blank');
+    } else {
+      this.paymentAlert.set({ type: 'error', message: 'Invoice PDF is not available yet.' });
+    }
+  }
+
+  shareBooking() {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({
+        title: `Booking ${this.booking()?.bookingNumber}`,
+        text: 'Check out my event booking on PrideHub!',
+        url: url,
+      }).catch(err => console.log('Error sharing:', err));
+    } else {
+      navigator.clipboard.writeText(url);
+      this.paymentAlert.set({ type: 'success', message: 'Booking link copied to clipboard!' });
+    }
+  }
 
   ngOnInit(): void {
     this.loadBooking();
