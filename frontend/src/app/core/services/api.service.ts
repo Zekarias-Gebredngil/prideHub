@@ -57,6 +57,13 @@ export class ApiService {
       .pipe(map((res) => res.data));
   }
 
+  getBlob(endpoint: string, params?: Record<string, unknown>): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/${endpoint}`, {
+      params: this.buildParams(params),
+      responseType: 'blob',
+    });
+  }
+
   upload<T>(endpoint: string, formData: FormData): Observable<T> {
     return this.http
       .post<ApiResponse<T>>(`${this.baseUrl}/${endpoint}`, formData)

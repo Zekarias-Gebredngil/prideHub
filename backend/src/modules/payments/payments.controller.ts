@@ -1,6 +1,8 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService, CreatePaymentDto, CreateInvoiceDto } from './payments.service';
+import { InvoicePdfService } from './invoice-pdf.service';
+import type { Response } from 'express';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -14,7 +16,10 @@ import { UserRole } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly invoicePdfService: InvoicePdfService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all payments' })
@@ -53,6 +58,23 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Get invoices by booking' })
   getInvoicesByBooking(@Param('bookingId') bookingId: string) {
     return this.paymentsService.getInvoicesByBooking(bookingId);
+  }
+
+  @Get('invoice/:bookingId/pdf')
+  @ApiOperation({ summary: 'Download invoice as PDF' })
+  async downloadInvoicePdf(
+    @Param('bookingId') bookingId: string,
+    @Res() res: Response,
+  ) {
+    const booking = await this.paymentsService.getBookingForInvoice(bookingId);
+    const buffer = await this.invoicePdfService.generate(booking);
+    const filename = `invoice-${booking.bookingNumber}.pdf`;
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
   }
 
   @Patch(':id/confirm')

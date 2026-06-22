@@ -117,6 +117,29 @@ export class PaymentsService {
     return invoice;
   }
 
+  async getBookingForInvoice(bookingId: string) {
+    const booking = await this.prisma.booking.findFirst({
+      where: { id: bookingId, deletedAt: null },
+      include: {
+        client: { select: { fullName: true, email: true, phone: true } },
+        venue: { select: { name: true, city: true, address: true } },
+        package: { select: { name: true, tier: true } },
+        items: {
+          include: {
+            service: { select: { name: true } },
+            vendor: { select: { businessName: true } },
+          },
+        },
+        payments: {
+          where: { status: 'COMPLETED' },
+          orderBy: { paidAt: 'asc' },
+        },
+      },
+    });
+    if (!booking) throw new (await import('@nestjs/common')).NotFoundException('Booking not found');
+    return booking;
+  }
+
   async getInvoicesByBooking(bookingId: string) {
     return this.prisma.invoice.findMany({
       where: { bookingId },
