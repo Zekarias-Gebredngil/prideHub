@@ -15,6 +15,7 @@ export class AdminServicesComponent {
     columns: [
       { key: 'name', label: 'Name' },
       { key: 'category', path: 'category.name', label: 'Category' },
+      { key: 'coverImage', label: 'Image', type: 'image' },
       { key: 'price', label: 'Price', type: 'money' },
       { key: 'duration', label: 'Duration' },
       { key: 'isFeatured', label: 'Featured', type: 'boolean' },
@@ -22,6 +23,7 @@ export class AdminServicesComponent {
     fields: [
       { key: 'name', label: 'Name', required: true },
       { key: 'categoryId', label: 'Category', type: 'select', required: true, optionsEndpoint: 'services/categories' },
+      { key: 'coverImage', label: 'Cover Image', type: 'image' },
       { key: 'shortDesc', label: 'Short Description', type: 'textarea' },
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'price', label: 'Price', type: 'number' },

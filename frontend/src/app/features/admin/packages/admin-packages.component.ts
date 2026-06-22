@@ -28,10 +28,22 @@ export class AdminPackagesComponent {
       { key: 'discountPct', label: 'Discount %', type: 'number' },
       { key: 'maxGuests', label: 'Max Guests', type: 'number' },
       { key: 'duration', label: 'Duration' },
-      { key: 'color', label: 'Color' },
+      { key: 'color', label: 'Color', type: 'color' },
+      { key: 'items', label: 'What\'s Included (one per line)', type: 'textarea' },
       { key: 'isFeatured', label: 'Featured', type: 'checkbox' },
     ],
     defaultCreate: { discountPct: 0 },
+    transformBeforeEdit: (row: any) => ({
+      ...row,
+      items: (row.items || []).map((i: any) => i.description).join('\n'),
+    }),
+    transformBeforeSave: (body: any) => {
+      const { items, ...rest } = body;
+      const formattedItems = typeof items === 'string' && items.trim() 
+        ? items.split('\n').map(desc => ({ description: desc.trim(), isIncluded: true })).filter(i => i.description)
+        : [];
+      return { ...rest, items: formattedItems };
+    },
     actions: [
       { label: 'Delete', icon: 'delete', method: 'delete', endpoint: row => `packages/${row.id}`, confirm: 'Delete this package?' },
     ],

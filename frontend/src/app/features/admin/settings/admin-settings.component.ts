@@ -169,10 +169,11 @@ export class AdminSettingsComponent {
 
   save(): void {
     this.saving.set(true);
+    const { id, updatedAt, createdAt, ...restForm } = this.form as any;
     const payload = {
-      ...this.form,
+      ...restForm,
       value: this.parseValue(this.valueText),
-      group: this.form.group || this.group,
+      group: restForm.group || this.group,
     };
     this.api.post('settings', payload).subscribe({
       next: () => {

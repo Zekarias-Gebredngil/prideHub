@@ -7,7 +7,7 @@ import { Payment } from '../../../core/models/booking.model';
 @Component({
   selector: 'app-payments',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   template: `
     <div>
       <h1 class="font-display text-2xl font-bold text-dark dark:text-white mb-6">Payments</h1>

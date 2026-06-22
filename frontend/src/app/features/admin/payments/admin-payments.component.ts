@@ -23,12 +23,31 @@ export class AdminPaymentsComponent {
     ],
     actions: [
       {
-        label: 'Confirm',
+        label: 'Confirm Payment',
         icon: 'done_all',
         method: 'patch',
         endpoint: row => `payments/${row.id}/confirm`,
         body: row => ({ transactionRef: row.transactionRef || `MANUAL-${Date.now()}` }),
         visible: row => row.status !== 'COMPLETED',
+        confirm: 'Confirm this payment?',
+      },
+      {
+        label: 'Mark Failed',
+        icon: 'error',
+        method: 'patch',
+        endpoint: row => `payments/${row.id}/status`,
+        body: () => ({ status: 'FAILED' }),
+        visible: row => row.status !== 'FAILED' && row.status !== 'COMPLETED',
+        confirm: 'Mark payment as FAILED?',
+      },
+      {
+        label: 'Refund',
+        icon: 'currency_exchange',
+        method: 'patch',
+        endpoint: row => `payments/${row.id}/status`,
+        body: () => ({ status: 'REFUNDED' }),
+        visible: row => row.status === 'COMPLETED',
+        confirm: 'Mark payment as REFUNDED?',
       },
     ],
   };
