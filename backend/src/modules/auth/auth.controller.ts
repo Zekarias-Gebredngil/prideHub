@@ -9,6 +9,7 @@ import { AuthService } from './auth.service';
 import {
   RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto,
   VerifyEmailDto, RefreshTokenDto, ChangePasswordDto,
+  SendPhoneOtpDto, VerifyPhoneOtpDto,
 } from './dto/auth.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -88,6 +89,27 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout and revoke refresh token' })
   logout(@Body() dto: RefreshTokenDto) {
     return this.authService.logout(dto.refreshToken);
+  }
+
+  // ── Phone Verification ─────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Post('send-phone-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('access-token')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
+  @ApiOperation({ summary: 'Send OTP to phone via AfroMessage' })
+  sendPhoneOtp(@CurrentUser() user: JwtUser, @Body() dto: SendPhoneOtpDto) {
+    return this.authService.sendPhoneOtp(user.sub, dto.phone);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('verify-phone-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Verify phone OTP via AfroMessage' })
+  verifyPhoneOtp(@CurrentUser() user: JwtUser, @Body() dto: VerifyPhoneOtpDto) {
+    return this.authService.verifyPhoneOtp(user.sub, dto.phone, dto.code);
   }
 
   // ── OAuth ──────────────────────────────────────────────────────────────────

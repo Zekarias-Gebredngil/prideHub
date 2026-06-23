@@ -108,3 +108,19 @@ export class ChangePasswordDto {
   @MinLength(8)
   newPassword: string;
 }
+
+export class SendPhoneOtpDto {
+  @ApiProperty({ example: '+251911234567' })
+  @IsString()
+  phone: string;
+}
+
+export class VerifyPhoneOtpDto {
+  @ApiProperty({ example: '+251911234567' })
+  @IsString()
+  phone: string;
+
+  @ApiProperty({ example: '12345' })
+  @IsString()
+  code: string;
+}

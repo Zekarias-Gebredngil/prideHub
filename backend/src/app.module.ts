@@ -31,6 +31,7 @@ import { ContactModule } from './modules/contact/contact.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { GatewayModule } from './gateway/gateway.module';
+import { SmsModule } from './modules/sms/sms.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -95,6 +96,7 @@ import redisConfig from './config/redis.config';
     DashboardModule,
     SettingsModule,
     GatewayModule,
+    SmsModule,
   ],
 })
 export class AppModule {}

@@ -11,6 +11,7 @@ import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { SmsService } from '../sms/sms.service';
 import {
   RegisterDto,
   LoginDto,
@@ -28,6 +29,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly smsService: SmsService,
   ) {}
 
   // ── Registration ──────────────────────────────────────────────────────────
@@ -173,6 +175,46 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
     return { message: 'Logged out successfully' };
+  }
+
+  // ── Phone Verification (AfroMessage) ──────────────────────────────────────
+
+  async sendPhoneOtp(userId: string, phone: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    // Make sure phone is unique if it belongs to someone else
+    const existingPhone = await this.prisma.user.findFirst({
+      where: { phone, id: { not: userId } },
+    });
+    if (existingPhone) throw new ConflictException('Phone number is already associated with another account');
+
+    // Update phone if it's different
+    if (user.phone !== phone) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { phone, isPhoneVerified: false },
+      });
+    }
+
+    await this.smsService.sendOtp(phone);
+    return { message: 'Verification code sent successfully' };
+  }
+
+  async verifyPhoneOtp(userId: string, phone: string, code: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.phone !== phone) throw new BadRequestException('Phone number does not match user account');
+
+    await this.smsService.verifyOtp(phone, code);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isPhoneVerified: true },
+    });
+
+    return { message: 'Phone number verified successfully' };
   }
 
   // ── OAuth Handler ─────────────────────────────────────────────────────────

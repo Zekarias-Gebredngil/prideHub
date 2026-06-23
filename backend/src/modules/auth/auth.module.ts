@@ -10,6 +10,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { FacebookStrategy } from './strategies/facebook.strategy';
 import { UsersModule } from '../users/users.module';
 import { MailModule } from '../mail/mail.module';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { MailModule } from '../mail/mail.module';
     }),
     UsersModule,
     MailModule,
+    SmsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, LocalStrategy, GoogleStrategy, FacebookStrategy],
