@@ -203,7 +203,7 @@ export class InvoicePdfService {
     line(summaryX, y + 4, summaryX + summaryW, y + 4, 0.3, rgb(0.85, 0.85, 0.88));
     summaryRow('Total Paid', fmt(totalPaid), GREEN, true);
     line(summaryX, y + 4, summaryX + summaryW, y + 4, 0.3, rgb(0.85, 0.85, 0.88));
-    summaryRow(isFullyPaid ? 'Fully Paid' : 'Balance Due', fmt(Math.max(0, remaining)), isFullyPaid ? GREEN : BRAND_SECONDARY, true);
+    // summaryRow(isFullyPaid ? 'Fully Paid' : 'Balance Due', fmt(Math.max(0, remaining)), isFullyPaid ? GREEN : BRAND_SECONDARY, true);
 
     y -= 36;
 

@@ -94,6 +94,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/booking-flow/booking-flow.component').then(m => m.BookingFlowComponent),
   },
 
+  // ── Vendor Setup ──────────────────────────────────────────────────────────────
+  {
+    path: 'vendor-setup',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/vendor-setup/vendor-setup.component').then(m => m.VendorSetupComponent),
+  },
+
   // ── 404 ───────────────────────────────────────────────────────────────────────
   { path: '**', loadComponent: () => import('./features/not-found/not-found.component').then(m => m.NotFoundComponent) },
 ];
