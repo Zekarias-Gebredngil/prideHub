@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -91,7 +91,7 @@ import { ApiService } from '../../../core/services/api.service';
 
             <!-- Contact -->
             <div class="mt-6 space-y-2">
-              @for (contact of contacts; track contact.value) {
+              @for (contact of contacts(); track contact.value) {
                 <div class="flex items-center gap-2 text-white/60 text-sm">
                   <span class="material-icons text-secondary text-base">{{ contact.icon }}</span>
                   <span>{{ contact.value }}</span>
@@ -118,7 +118,7 @@ import { ApiService } from '../../../core/services/api.service';
     </footer>
   `,
 })
-export class FooterComponent {
+export class FooterComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly fb = inject(FormBuilder);
 
@@ -162,11 +162,25 @@ export class FooterComponent {
     { label: 'Cookie Policy', path: '/privacy-policy' },
   ];
 
-  contacts = [
-    { icon: 'location_on', value: 'Bole Road, Addis Ababa, Ethiopia' },
-    { icon: 'phone', value: '+251 911 234 567' },
-    { icon: 'email', value: 'info@pridehub.com' },
-  ];
+  contacts = signal([
+    { id: 'address', icon: 'location_on', value: 'Bole Road, Addis Ababa, Ethiopia' },
+    { id: 'phone', icon: 'phone', value: '+251 911 234 567' },
+    { id: 'email', icon: 'email', value: 'info@pridehub.com' },
+  ]);
+
+  ngOnInit() {
+    this.api.get<{ key: string, value: any }[]>('settings/public').subscribe({
+      next: (settings) => {
+        const settingsMap = settings.reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {} as Record<string, any>);
+        this.contacts.update(curr => curr.map(c => {
+          if (c.id === 'address' && settingsMap['site.address']) return { ...c, value: settingsMap['site.address'] };
+          if (c.id === 'phone' && settingsMap['site.phone']) return { ...c, value: settingsMap['site.phone'] };
+          if (c.id === 'email' && settingsMap['site.email']) return { ...c, value: settingsMap['site.email'] };
+          return c;
+        }));
+      }
+    });
+  }
 
   subscribe(): void {
     if (this.newsletterForm.invalid) return;
