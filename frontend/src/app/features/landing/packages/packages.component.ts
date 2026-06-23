@@ -72,6 +72,19 @@ import { Package } from '../../../core/models/content.model';
               </div>
             }
           </div>
+          @if (packages().length === 0) {
+            <div class="text-center py-16">
+              <span class="material-icons text-5xl text-gray-200 block mb-3">inventory_2</span>
+              <p class="text-gray-400">No packages found.</p>
+            </div>
+          } @else if (hasNext()) {
+            <div class="mt-12 text-center">
+              <button (click)="loadMore()" class="px-6 py-3 rounded-xl bg-primary/10 text-primary font-semibold hover:bg-primary hover:text-white transition-colors inline-flex items-center gap-2">
+                <span class="material-icons text-[18px]">refresh</span>
+                Load More Packages
+              </button>
+            </div>
+          }
         }
       </div>
     </section>
@@ -92,11 +105,35 @@ export class PackagesComponent implements OnInit {
   private readonly api = inject(ApiService);
   readonly packages = signal<Package[]>([]);
   readonly loading = signal(true);
+  readonly page = signal(1);
+  readonly hasNext = signal(false);
 
   ngOnInit() {
-    this.api.getPaginated<Package>('packages', { limit: 20 }).subscribe({
-      next: (res) => { this.packages.set(res.data); this.loading.set(false); },
+    this.load();
+  }
+
+  load(isLoadMore = false) {
+    if (!isLoadMore) {
+      this.page.set(1);
+      this.loading.set(true);
+    }
+    
+    this.api.getPaginated<Package>('packages', { limit: 12, page: this.page() }).subscribe({
+      next: (res) => { 
+        if (isLoadMore) {
+          this.packages.update(curr => [...curr, ...res.data]);
+        } else {
+          this.packages.set(res.data);
+        }
+        this.hasNext.set(res.meta?.hasNext || false);
+        this.loading.set(false); 
+      },
       error: () => this.loading.set(false),
     });
+  }
+
+  loadMore() {
+    this.page.update(p => p + 1);
+    this.load(true);
   }
 }

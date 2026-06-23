@@ -86,6 +86,13 @@ import { Venue } from '../../../core/models/content.model';
               <span class="material-icons text-5xl text-gray-200 block mb-3">location_off</span>
               <p class="text-gray-400">No venues found. Try a different filter.</p>
             </div>
+          } @else if (hasNext()) {
+            <div class="mt-12 text-center">
+              <button (click)="loadMore()" class="px-6 py-3 rounded-xl bg-primary/10 text-primary font-semibold hover:bg-primary hover:text-white transition-colors inline-flex items-center gap-2">
+                <span class="material-icons text-[18px]">refresh</span>
+                Load More Venues
+              </button>
+            </div>
           }
         }
       </div>
@@ -97,19 +104,37 @@ export class VenuesComponent implements OnInit {
   readonly venues = signal<Venue[]>([]);
   readonly loading = signal(true);
   readonly selectedCity = signal('');
+  readonly page = signal(1);
+  readonly hasNext = signal(false);
   search = '';
   cities = ['', 'Addis Ababa', 'Hawassa', 'Adama', 'Bahir Dar', 'Mekelle', 'Gondar'];
 
   ngOnInit() { this.load(); }
 
-  load() {
-    this.loading.set(true);
-    const params: any = { limit: 30 };
+  load(isLoadMore = false) {
+    if (!isLoadMore) {
+      this.page.set(1);
+      this.loading.set(true);
+    }
+    const params: any = { limit: 40, page: this.page() };
     if (this.selectedCity()) params['city'] = this.selectedCity();
     if (this.search) params['search'] = this.search;
     this.api.getPaginated<Venue>('venues', params).subscribe({
-      next: (res) => { this.venues.set(res.data); this.loading.set(false); },
+      next: (res) => {
+        if (isLoadMore) {
+          this.venues.update(curr => [...curr, ...res.data]);
+        } else {
+          this.venues.set(res.data);
+        }
+        this.hasNext.set(res.meta?.hasNext || false);
+        this.loading.set(false);
+      },
       error: () => this.loading.set(false),
     });
+  }
+
+  loadMore() {
+    this.page.update(p => p + 1);
+    this.load(true);
   }
 }

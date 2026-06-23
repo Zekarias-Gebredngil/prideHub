@@ -15,7 +15,11 @@ import { StarRatingComponent } from '../../../shared/components/star-rating/star
       <div class="container mx-auto px-4 text-center">
         <span class="text-secondary text-sm font-semibold uppercase tracking-widest block mb-3">Trusted Professionals</span>
         <h1 class="font-display text-5xl font-bold text-white mb-4">Our Vendors</h1>
-        <p class="text-white/70 text-lg max-w-2xl mx-auto">Connect with verified professionals for your perfect event</p>
+        <p class="text-white/70 text-lg max-w-2xl mx-auto mb-8">Connect with verified professionals for your perfect event</p>
+        <a routerLink="/vendor-setup" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-secondary text-dark font-semibold hover:bg-secondary/90 transition-colors shadow-lg">
+          <span class="material-icons text-[18px]">add_circle</span>
+          Become a Vendor
+        </a>
       </div>
     </section>
 
@@ -76,6 +80,13 @@ import { StarRatingComponent } from '../../../shared/components/star-rating/star
               <span class="material-icons text-5xl text-gray-200 block mb-3">store_mall_directory</span>
               <p class="text-gray-400">No vendors found for this category.</p>
             </div>
+          } @else if (hasNext()) {
+            <div class="mt-12 text-center">
+              <button (click)="loadMore()" class="px-6 py-3 rounded-xl bg-primary/10 text-primary font-semibold hover:bg-primary hover:text-white transition-colors inline-flex items-center gap-2">
+                <span class="material-icons text-[18px]">refresh</span>
+                Load More Vendors
+              </button>
+            </div>
           }
         }
       </div>
@@ -88,19 +99,37 @@ export class VendorsComponent implements OnInit {
   readonly categories = signal<any[]>([]);
   readonly loading = signal(true);
   readonly selectedCat = signal('');
+  readonly page = signal(1);
+  readonly hasNext = signal(false);
 
   ngOnInit() {
     this.api.get<any[]>('vendors/categories').subscribe({ next: (d) => this.categories.set(d) });
     this.load();
   }
 
-  load() {
-    this.loading.set(true);
-    const params: any = { limit: 40 };
+  load(isLoadMore = false) {
+    if (!isLoadMore) {
+      this.page.set(1);
+      this.loading.set(true);
+    }
+    const params: any = { limit: 40, page: this.page() };
     if (this.selectedCat()) params['categoryId'] = this.selectedCat();
     this.api.getPaginated<any>('vendors', params).subscribe({
-      next: (res) => { this.vendors.set(res.data); this.loading.set(false); },
+      next: (res) => {
+        if (isLoadMore) {
+          this.vendors.update(curr => [...curr, ...res.data]);
+        } else {
+          this.vendors.set(res.data);
+        }
+        this.hasNext.set(res.meta?.hasNext || false);
+        this.loading.set(false);
+      },
       error: () => this.loading.set(false),
     });
+  }
+
+  loadMore() {
+    this.page.update(p => p + 1);
+    this.load(true);
   }
 }
