@@ -55,43 +55,138 @@ export class SmsService {
   /**
    * Triggers an OTP code to be sent to the user using AfroMessage's Challenge API.
    */
+  // async sendOtp(to: string): Promise<any> {
+  //   if (!this.otpToken) {
+  //     this.logger.warn('AFROMESSAGE_OTP_TOKEN is not configured. Skipping OTP.');
+  //     return;
+  //   }
+
+  //   try {
+  //     const url = new URL('https://api.afromessage.com/api/challenge');
+  //     if (this.senderId) url.searchParams.append('from', this.senderId);
+  //     if (this.senderId) url.searchParams.append('sender', this.senderId);
+  //     url.searchParams.append('to', to);
+  //     url.searchParams.append('pr', 'PrideHub Verification Code: ');
+  //     url.searchParams.append('sb', '1'); // space before
+  //     url.searchParams.append('sa', '1'); // space after
+  //     url.searchParams.append('ttl', '0');
+  //     url.searchParams.append('tlen', '0');
+  //     url.searchParams.append('t', '0'); // numeric only
+
+  //     const response = await fetch(url.toString(), {
+  //       method: 'GET',
+  //       headers: {
+  //         'Authorization': `Bearer ${this.otpToken}`,
+  //         'Accept': 'application/json',
+  //       },
+  //     });
+
+  //     const data = await response.json();
+  //     if (!response.ok || data.acknowledge !== 'success') {
+  //       throw new Error(data.response?.errors?.[0] || 'Failed to send OTP');
+  //     }
+
+  //     this.logger.log(`OTP challenge initiated for ${to}`);
+  //     return data;
+  //   } catch (error: any) {
+  //     this.logger.error(`Error sending OTP to ${to}: ${error.message}`);
+  //     throw new InternalServerErrorException('Failed to send verification code');
+  //   }
+  // }
+
   async sendOtp(to: string): Promise<any> {
     if (!this.otpToken) {
       this.logger.warn('AFROMESSAGE_OTP_TOKEN is not configured. Skipping OTP.');
       return;
     }
 
+    // Normalize Ethiopian phone number
+    const normalizedPhone = this.normalizePhone(to);
+
     try {
+      this.logger.log(`Sending OTP to: ${normalizedPhone}`);
+
       const url = new URL('https://api.afromessage.com/api/challenge');
-      if (this.senderId) url.searchParams.append('from', this.senderId);
-      if (this.senderId) url.searchParams.append('sender', this.senderId);
-      url.searchParams.append('to', to);
+
+      if (this.senderId) {
+        url.searchParams.append('from', this.senderId);
+        url.searchParams.append('sender', this.senderId);
+      }
+
+      url.searchParams.append('to', normalizedPhone);
       url.searchParams.append('pr', 'PrideHub Verification Code: ');
-      url.searchParams.append('sb', '1'); // space before
-      url.searchParams.append('sa', '1'); // space after
+      url.searchParams.append('sb', '1');
+      url.searchParams.append('sa', '1');
       url.searchParams.append('ttl', '0');
       url.searchParams.append('tlen', '0');
-      url.searchParams.append('t', '0'); // numeric only
+      url.searchParams.append('t', '0');
+
+      this.logger.debug(`Request URL: ${url.toString()}`);
 
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.otpToken}`,
-          'Accept': 'application/json',
+          Authorization: `Bearer ${this.otpToken}`,
+          Accept: 'application/json',
         },
       });
 
-      const data = await response.json();
-      if (!response.ok || data.acknowledge !== 'success') {
-        throw new Error(data.response?.errors?.[0] || 'Failed to send OTP');
+      const rawBody = await response.text();
+
+      this.logger.log(`AfroMessage Status: ${response.status}`);
+      this.logger.log(`AfroMessage Response: ${rawBody}`);
+
+      let data: any = {};
+
+      try {
+        data = JSON.parse(rawBody);
+      } catch {
+        throw new Error(`Invalid response from AfroMessage: ${rawBody}`);
       }
 
-      this.logger.log(`OTP challenge initiated for ${to}`);
+      if (!response.ok || data.acknowledge !== 'success') {
+        throw new Error(
+          data?.response?.errors?.join(', ') ||
+          data?.response?.message ||
+          rawBody ||
+          'Failed to send OTP',
+        );
+      }
+
+      this.logger.log(`OTP challenge initiated for ${normalizedPhone}`);
+
       return data;
     } catch (error: any) {
-      this.logger.error(`Error sending OTP to ${to}: ${error.message}`);
-      throw new InternalServerErrorException('Failed to send verification code');
+      this.logger.error(
+        `Error sending OTP to ${normalizedPhone}:`,
+        error.stack || error.message,
+      );
+
+      throw new InternalServerErrorException(
+        error.message || 'Failed to send verification code',
+      );
     }
+  }
+
+  private normalizePhone(phone: string): string {
+    // Remove spaces, dashes, parentheses, etc.
+    phone = phone.replace(/[^\d+]/g, '');
+
+    if (phone.startsWith('+251')) {
+      return phone;
+    }
+
+    if (phone.startsWith('251')) {
+      return `+${phone}`;
+    }
+
+    if (phone.startsWith('09')) {
+      return `+251${phone.substring(1)}`;
+    }
+
+    throw new BadRequestException(
+      'Invalid Ethiopian phone number format. Expected e.g. 0991556781 or +251991556781.',
+    );
   }
 
   /**
@@ -117,7 +212,7 @@ export class SmsService {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new BadRequestException(data.response?.errors?.[0] || 'Verification failed');
       }

@@ -1,9 +1,9 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Booking } from '../../../../core/models/booking.model';
 import { ApiService } from '../../../../core/services/api.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { Booking } from '../../../../core/models/booking.model';
 
 @Component({
   selector: 'app-booking-detail',
@@ -227,9 +227,9 @@ export class BookingDetailComponent implements OnInit {
   readonly booking = signal<Booking | null>(null);
   readonly loading = signal(true);
   readonly makingPayment = signal(false);
-  
+
   readonly pendingPayment = signal(false);
-  readonly paymentAlert = signal<{type: 'success' | 'error', message: string} | null>(null);
+  readonly paymentAlert = signal<{ type: 'success' | 'error', message: string } | null>(null);
 
   actions = [
     { icon: 'chat', label: 'Message Planner', handler: () => this.messagePlanner() },
@@ -272,7 +272,7 @@ export class BookingDetailComponent implements OnInit {
 
 
   shareBooking() {
-    const url = window.location.href;
+    const url = globalThis.location.href;
     if (navigator.share) {
       navigator.share({
         title: `Booking ${this.booking()?.bookingNumber}`,
@@ -287,7 +287,7 @@ export class BookingDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadBooking();
-    
+
     // Check if returning from Chapa payment
     const paymentRef = this.route.snapshot.queryParamMap.get('payment_ref');
     if (paymentRef) {
@@ -306,8 +306,8 @@ export class BookingDetailComponent implements OnInit {
 
   verifyPayment(txRef: string): void {
     // Remove query param from URL without reloading
-    window.history.replaceState({}, document.title, window.location.pathname);
-    
+    globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
+
     this.api.get<any>(`payments/verify/${txRef}`).subscribe({
       next: (payment) => {
         if (payment.status === 'COMPLETED') {
@@ -356,7 +356,7 @@ export class BookingDetailComponent implements OnInit {
       next: (payment) => {
         this.api.post<any>(`payments/${payment.id}/chapa`, {}).subscribe({
           next: (res) => {
-            window.location.href = res.checkoutUrl;
+            globalThis.location.href = res.checkoutUrl;
           },
           error: (err) => {
             this.paymentAlert.set({ type: 'error', message: err?.error?.message || 'Failed to initiate Chapa payment. Please contact support.' });

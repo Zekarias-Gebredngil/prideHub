@@ -1,13 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { PaymentMethod, PaymentStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
-import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
-import { PaymentMethod, PaymentStatus } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
 
 export class CreatePaymentDto {
   @IsUUID()
-  bookingId: string;
+  bookingId!: string;
 
   @IsOptional()
   @IsUUID()
@@ -16,14 +16,14 @@ export class CreatePaymentDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  amount: number;
+  amount!: number;
 
   @IsOptional()
   @IsString()
   currency?: string;
 
   @IsEnum(PaymentMethod)
-  method: PaymentMethod;
+  method!: PaymentMethod;
 
   @IsOptional()
   @IsString()
@@ -36,12 +36,12 @@ export class CreatePaymentDto {
 
 export class CreateInvoiceDto {
   @IsUUID()
-  bookingId: string;
+  bookingId!: string;
 
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  subtotal: number;
+  subtotal!: number;
 
   @IsOptional()
   @Type(() => Number)
@@ -71,7 +71,7 @@ export interface PaymentViewerScope {
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private generateInvoiceNumber(): string {
     return `INV-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
@@ -314,7 +314,7 @@ export class PaymentsService {
       });
 
       const data = await response.json();
-      
+
       if (data.status !== 'success') {
         const errorMsg = typeof data.message === 'string' ? data.message : JSON.stringify(data.message || data);
         throw new BadRequestException(`Chapa Error: ${errorMsg}`);
@@ -328,11 +328,11 @@ export class PaymentsService {
     } catch (error: any) {
       // Revert status on failure
       await this.prisma.payment.update({ where: { id: paymentId }, data: { status: PaymentStatus.PENDING } });
-      
+
       if (error.response && error.status) {
-         throw error; // It's already a NestJS HttpException
+        throw error; // It's already a NestJS HttpException
       }
-      
+
       throw new BadRequestException(error.message || 'Failed to communicate with Chapa');
     }
   }
@@ -344,7 +344,7 @@ export class PaymentsService {
     if (payment.status === PaymentStatus.COMPLETED) return payment;
 
     const secretKey = process.env.CHAPA_SECRET_KEY || 'CHASECK_TEST-Zf1BucPZVL5tWXGh8yKJx2m7VR2lCmSl';
-    
+
     try {
       const response = await fetch(`https://api.chapa.co/v1/transaction/verify/${txRef}`, {
         method: 'GET',
@@ -359,9 +359,10 @@ export class PaymentsService {
       } else if (data.status === 'success' && data.data.status === 'failed') {
         return this.prisma.payment.update({ where: { id: payment.id }, data: { status: PaymentStatus.FAILED } });
       }
-      
+
       return payment;
     } catch (error) {
+      console.error('Chapa verification failed:', error);
       return payment;
     }
   }
@@ -389,7 +390,7 @@ export class PaymentsService {
     } catch (error) {
       console.error('Chapa verification failed:', error);
     }
-    
+
     return { status: 'success' };
   }
 }

@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 // Purple brand colour
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 // Brand colours
 const BRAND_PRIMARY = rgb(139 / 255, 21 / 255, 56 / 255); // #8B1538 (PrideHub Red)

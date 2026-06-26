@@ -2,16 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEmail, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
-import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
+import { PrismaService } from '../../prisma/prisma.service';
 
 export class CreateLeadDto {
   @IsString()
   @MaxLength(150)
-  name: string;
+  name!: string;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsOptional()
   @IsString()
@@ -44,11 +44,11 @@ export class CreateLeadDto {
   notes?: string;
 }
 
-export class UpdateLeadDto extends PartialType(CreateLeadDto) {}
+export class UpdateLeadDto extends PartialType(CreateLeadDto) { }
 
 export class CreateFollowUpDto {
   @IsString()
-  scheduledAt: string;
+  scheduledAt!: string;
 
   @IsOptional()
   @IsString()
@@ -57,12 +57,12 @@ export class CreateFollowUpDto {
 
 export class CreateCrmNoteDto {
   @IsString()
-  note: string;
+  note!: string;
 }
 
 @Injectable()
 export class CrmService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async createLead(dto: CreateLeadDto) {
     return this.prisma.lead.create({ data: dto });
