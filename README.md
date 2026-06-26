@@ -139,9 +139,17 @@ GET /api/v1/services?page=1&limit=10&search=wedding&sortBy=price&sortOrder=asc
 |---------------|---------------------------------------------|
 | SUPER_ADMIN   | Full platform access                        |
 | ADMIN         | Manage all content, users, bookings         |
-| EVENT_PLANNER | Manage bookings, events, reports            |
-| VENDOR        | Manage own profile, view bookings           |
+| EVENT_PLANNER | Manage bookings, events, reports, Vendor Sourcing |
+| VENDOR        | Manage own services, profile, wallet, and bookings |
 | CLIENT        | Create bookings, view own data              |
+
+---
+
+## Core Features & Financial Engine
+- **Vendor Services Management**: Vendors can list and manage their own services in their Dashboard.
+- **Advance Payment System**: Clients pay an advance deposit initially. The platform instantly deducts its commission and credits the remainder to the vendor's wallet for working capital. The final payment is held in Escrow until event completion.
+- **Wallet & Commissions**: Automated fee splitting, automated wallet deductions for subscriptions, and Escrow releasing.
+- **Global Settings**: Core config (contact details, commission rates, SEO tags) fetched from Admin panel dynamically.
 
 ---
 
