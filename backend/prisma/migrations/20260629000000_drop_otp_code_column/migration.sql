@@ -1,0 +1,2 @@
+
+ALTER TABLE "otps" DROP COLUMN IF EXISTS "code";
