@@ -12,10 +12,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientSecret: config.get<string>('GOOGLE_CLIENT_SECRET', 'dummy'),
       callbackURL: config.get<string>('GOOGLE_CALLBACK_URL', 'http://localhost:3000/api/v1/auth/google/callback'),
       scope: ['email', 'profile'],
+      passReqToCallback: false,
     });
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback) {
+  async validate(_accessToken: string, _refreshToken: string, profile: any, done: VerifyCallback) {
     const { id, emails, name, photos } = profile;
     const tokens = await this.authService.handleOAuthLogin(
       'google',
