@@ -41,7 +41,12 @@ export class UsersService {
   async findById(id: string) {
     const user = await this.prisma.user.findFirst({
       where: { id, deletedAt: null },
-      include: { profile: true },
+      include: {
+        profile: true,
+        vendorProfile: {
+          include: { category: true },
+        },
+      },
     });
     if (!user) throw new NotFoundException('User not found');
     const { password, twoFactorSecret, ...safe } = user;
