@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { from, Subject } from 'rxjs';
 
 @Injectable()
 export class MailService {
@@ -94,5 +95,23 @@ export class MailService {
         </div>
       </div>
     `);
+  }
+
+  async sendContactNotification(name: string, email: string, subject: string, message: string, targetAdminEmail: string) {
+    const html = `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:40px;background:#f9f9f9">
+        <div style="background:#8B1538;padding:20px;text-align:center;border-radius:8px 8px 0 0">
+          <h1 style="color:#D4AF37;margin:0;font-size:28px">New Contact Message</h1>
+        </div>
+        <div style="background:#fff;padding:30px;border-radius:0 0 8px 8px;box-shadow:0 2px 8px rgba(0,0,0,.1)">
+          <h2 style="color:#2B2B2B">You have a new message from ${name}</h2>
+          <p><strong>Reply-To:</strong> ${email}</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <hr style="border:0;border-top:1px solid #eee;margin:20px 0" />
+          <p style="color:#555;line-height:1.6;white-space:pre-wrap">${message}</p>
+        </div>
+      </div>
+    `;
+    await this.send(targetAdminEmail, `Contact Form: ${subject}`, html, `Dev mode contact message from ${email} to ${targetAdminEmail}`);
   }
 }
