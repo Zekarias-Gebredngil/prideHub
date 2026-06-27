@@ -23,8 +23,24 @@ export const adminGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.hasRole('SUPER_ADMIN', 'ADMIN', 'EVENT_PLANNER')) return true;
-  return router.createUrlTree(['/dashboard']);
+  if (authService.hasRole('SUPER_ADMIN', 'ADMIN')) return true;
+  return router.createUrlTree([authService.dashboardUrlFor()]);
+};
+
+export const vendorGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (authService.hasRole('VENDOR')) return true;
+  return router.createUrlTree([authService.dashboardUrlFor()]);
+};
+
+export const plannerGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (authService.hasRole('EVENT_PLANNER')) return true;
+  return router.createUrlTree([authService.dashboardUrlFor()]);
 };
 
 export const roleGuard = (roles: string[]): CanActivateFn => () => {
