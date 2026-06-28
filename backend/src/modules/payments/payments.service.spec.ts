@@ -1,5 +1,11 @@
 import { PaymentsService } from './payments.service';
 
+// Mock CommissionService to avoid dependency issues in unit tests
+const mockCommissionService = {
+  processCommissionForPayment: jest.fn(),
+  createOrUpdateEscrow: jest.fn(),
+};
+
 describe('PaymentsService', () => {
   const createPrisma = () => ({
     payment: {
@@ -10,7 +16,7 @@ describe('PaymentsService', () => {
 
   it('filters payment history to the current user for non-admin roles', async () => {
     const prisma = createPrisma();
-    const service = new PaymentsService(prisma as any);
+    const service = new PaymentsService(prisma as any, mockCommissionService as any);
 
     await service.findAll({ page: 1, limit: 10, skip: 0, take: 10 } as any, { userId: 'client-id', isAdmin: false });
 
@@ -24,7 +30,7 @@ describe('PaymentsService', () => {
 
   it('does not filter payment history for admins', async () => {
     const prisma = createPrisma();
-    const service = new PaymentsService(prisma as any);
+    const service = new PaymentsService(prisma as any, mockCommissionService as any);
 
     await service.findAll({ page: 1, limit: 10, skip: 0, take: 10 } as any, { userId: 'admin-id', isAdmin: true });
 

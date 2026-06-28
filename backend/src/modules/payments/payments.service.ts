@@ -4,6 +4,7 @@ import { Type } from 'class-transformer';
 import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CommissionService } from '../commission/commission.service';
 
 export class CreatePaymentDto {
   @IsUUID()
@@ -71,7 +72,10 @@ export interface PaymentViewerScope {
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly commissionService: CommissionService,
+  ) { }
 
   private generateInvoiceNumber(): string {
     return `INV-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
@@ -209,6 +213,33 @@ export class PaymentsService {
           },
         });
       }
+    }
+
+    // ── Commission Engine: calculate and hold in escrow ────────────────────
+    try {
+      const booking = await this.prisma.booking.findUnique({
+        where: { id: payment.bookingId },
+        include: { items: { include: { vendor: true } } },
+      });
+      const vendorId = booking?.items?.find((i) => i.vendorId)?.vendorId ?? undefined;
+
+      const result = await this.commissionService.processCommissionForPayment(
+        id,
+        payment.bookingId,
+        Number(payment.amount),
+        vendorId,
+      );
+
+      if (vendorId && result && 'calculation' in result) {
+        await this.commissionService.createOrUpdateEscrow(
+          payment.bookingId,
+          vendorId,
+          (result as any).calculation,
+        );
+      }
+    } catch (err) {
+      // Commission processing failure should not block payment confirmation
+      console.error('Commission processing error (non-fatal):', err);
     }
 
     return updated;
