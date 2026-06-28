@@ -38,6 +38,38 @@ export class VendorsController {
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
+  @Get('me')
+  @ApiOperation({ summary: 'Get current vendor profile' })
+  findMe(@CurrentUser() user: JwtUser) {
+    return this.vendorsService.findMe(user.sub);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Get('me/analytics')
+  @ApiOperation({ summary: 'Get current vendor analytics' })
+  getAnalytics(@CurrentUser() user: JwtUser) {
+    return this.vendorsService.getAnalytics(user.sub);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Get('me/reviews')
+  @ApiOperation({ summary: 'Get current vendor reviews' })
+  getReviews(@CurrentUser() user: JwtUser) {
+    return this.vendorsService.getReviews(user.sub);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  @ApiOperation({ summary: 'Update current vendor profile' })
+  updateMe(@CurrentUser() user: JwtUser, @Body() dto: UpdateVendorProfileDto) {
+    return this.vendorsService.updateMe(user.sub, dto);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateVendorProfileDto) {
     return this.vendorsService.update(id, dto);

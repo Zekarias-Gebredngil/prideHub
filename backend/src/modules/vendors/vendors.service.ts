@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsNumber, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
@@ -44,6 +45,16 @@ export class CreateVendorProfileDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
+  logo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  coverImage?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(50)
   priceUnit?: string;
 }
@@ -51,17 +62,64 @@ export class CreateVendorProfileDto {
 export class UpdateVendorProfileDto extends PartialType(CreateVendorProfileDto) {}
 
 @Injectable()
-export class VendorsService {
+export class VendorsService implements OnModuleInit {
+  private readonly logger = new Logger(VendorsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
+
+  /** One-time idempotent migration: promote any existing vendor-profile owners to VENDOR role. */
+  async onModuleInit() {
+    const profiles = await this.prisma.vendorProfile.findMany({
+      where: { deletedAt: null, user: { role: { not: UserRole.VENDOR } } },
+      select: { id: true, userId: true },
+    });
+
+    if (profiles.length === 0) return;
+
+    this.logger.log(`Migrating ${profiles.length} existing vendor profile(s) to VENDOR role…`);
+
+    for (const p of profiles) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.user.update({ where: { id: p.userId }, data: { role: UserRole.VENDOR } });
+        await tx.vendorWallet.upsert({
+          where: { vendorId: p.id },
+          create: { vendorId: p.id },
+          update: {},
+        });
+      });
+    }
+
+    this.logger.log('Vendor role migration complete.');
+  }
 
   private makeSlug(name: string) {
     return slugify(name, { lower: true, strict: true }) + '-' + Date.now().toString(36);
   }
 
   async createProfile(userId: string, dto: CreateVendorProfileDto) {
-    return this.prisma.vendorProfile.create({
-      data: { ...dto, userId, slug: this.makeSlug(dto.businessName) },
-      include: { category: true, user: { select: { id: true, fullName: true, email: true, avatar: true } } },
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Upsert the vendor profile
+      const profile = await tx.vendorProfile.upsert({
+        where: { userId },
+        create: { ...dto, userId, slug: this.makeSlug(dto.businessName) },
+        update: { ...dto },
+        include: { category: true, user: { select: { id: true, fullName: true, email: true, avatar: true } } },
+      });
+
+      // 2. Promote user role to VENDOR
+      await tx.user.update({
+        where: { id: userId },
+        data: { role: UserRole.VENDOR },
+      });
+
+      // 3. Initialize the vendor wallet (idempotent)
+      await tx.vendorWallet.upsert({
+        where: { vendorId: profile.id },
+        create: { vendorId: profile.id },
+        update: {},
+      });
+
+      return profile;
     });
   }
 
@@ -125,6 +183,72 @@ export class VendorsService {
       include: { _count: { select: { vendors: true } } },
       orderBy: { name: 'asc' },
     });
+  }
+
+  async findMe(userId: string) {
+    const profile = await this.prisma.vendorProfile.findUnique({
+      where: { userId },
+      include: { category: true }
+    });
+    if (!profile) throw new NotFoundException('Vendor profile not found');
+    return profile;
+  }
+
+  async updateMe(userId: string, dto: UpdateVendorProfileDto) {
+    const profile = await this.prisma.vendorProfile.findUnique({ where: { userId } });
+    if (!profile) throw new NotFoundException('Vendor profile not found');
+    
+    return this.prisma.vendorProfile.update({
+      where: { userId },
+      data: dto
+    });
+  }
+
+  async getAnalytics(userId: string) {
+    const vendor = await this.findMe(userId);
+    const servicesCount = await this.prisma.service.count({ where: { vendorId: vendor.id, deletedAt: null } });
+    
+    // Count bookings that contain an item for this vendor
+    const bookingsCount = await this.prisma.booking.count({ 
+      where: { items: { some: { vendorId: vendor.id } } } 
+    });
+    
+    // Calculate total revenue from completed booking items for this vendor
+    const completedItems = await this.prisma.bookingItem.findMany({ 
+      where: { 
+        vendorId: vendor.id, 
+        booking: { status: 'COMPLETED' } 
+      },
+      select: { totalPrice: true }
+    });
+    const revenue = completedItems.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0);
+    
+    // Get recent bookings involving this vendor
+    const recentBookings = await this.prisma.booking.findMany({
+      where: { items: { some: { vendorId: vendor.id } } },
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: { client: { select: { fullName: true } } }
+    });
+
+    return {
+      data: {
+        revenue,
+        bookingsCount,
+        servicesCount,
+        recentBookings
+      }
+    };
+  }
+
+  async getReviews(userId: string) {
+    const vendor = await this.findMe(userId);
+    const reviews = await this.prisma.review.findMany({
+      where: { vendorId: vendor.id },
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { fullName: true, avatar: true } } }
+    });
+    return { data: reviews };
   }
 
   async update(id: string, dto: UpdateVendorProfileDto) {
