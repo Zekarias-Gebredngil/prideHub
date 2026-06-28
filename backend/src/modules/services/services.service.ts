@@ -9,10 +9,10 @@ import slugify from 'slugify';
 export class CreateServiceDto {
   @IsString()
   @MaxLength(200)
-  name: string;
+  name!: string;
 
   @IsUUID()
-  categoryId: string;
+  categoryId!: string;
 
   @IsOptional()
   @IsString()
@@ -40,6 +40,15 @@ export class CreateServiceDto {
   duration?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  coverImage?: string;
+
+  @IsOptional()
+  @IsUUID()
+  vendorId?: string;
+
+  @IsOptional()
   @IsBoolean()
   isFeatured?: boolean;
 
@@ -54,28 +63,36 @@ export class CreateServiceDto {
   seoDesc?: string;
 }
 
-export class UpdateServiceDto extends PartialType(CreateServiceDto) {}
+export class UpdateServiceDto extends PartialType(CreateServiceDto) { }
 
 @Injectable()
 export class ServicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private makeSlug(name: string) {
     return slugify(name, { lower: true, strict: true }) + '-' + Date.now().toString(36);
   }
 
-  async create(dto: CreateServiceDto) {
+  async create(dto: CreateServiceDto, userId?: string, role?: string) {
+    let vendorId: string | undefined;
+    if (role === 'VENDOR' && userId) {
+      const vendor = await this.prisma.vendorProfile.findUnique({ where: { userId } });
+      if (!vendor) throw new NotFoundException('Vendor profile not found');
+      vendorId = vendor.id;
+    }
+
     return this.prisma.service.create({
-      data: { ...dto, slug: this.makeSlug(dto.name) },
+      data: { ...dto, vendorId, slug: this.makeSlug(dto.name) },
       include: { category: true },
     });
   }
 
-  async findAll(dto: PaginationDto, categoryId?: string) {
+  async findAll(dto: PaginationDto, categoryId?: string, vendorId?: string) {
     const where: any = {
       isActive: true,
       deletedAt: null,
       ...(categoryId && { categoryId }),
+      ...(vendorId && { vendorId }),
       ...(dto.search && { name: { contains: dto.search, mode: 'insensitive' } }),
     };
 
@@ -120,9 +137,17 @@ export class ServicesService {
     return service;
   }
 
-  async update(id: string, dto: UpdateServiceDto) {
+  async update(id: string, dto: UpdateServiceDto, userId?: string, role?: string) {
     const service = await this.prisma.service.findFirst({ where: { id, deletedAt: null } });
     if (!service) throw new NotFoundException('Service not found');
+
+    if (role === 'VENDOR') {
+      const vendor = await this.prisma.vendorProfile.findUnique({ where: { userId } });
+      if (service.vendorId !== vendor?.id) {
+        throw new NotFoundException('Service not found or unauthorized');
+      }
+    }
+
     return this.prisma.service.update({
       where: { id },
       data: { ...dto, slug: dto.name ? this.makeSlug(dto.name) : undefined },
@@ -130,9 +155,17 @@ export class ServicesService {
     });
   }
 
-  async softDelete(id: string) {
+  async softDelete(id: string, userId?: string, role?: string) {
     const service = await this.prisma.service.findFirst({ where: { id, deletedAt: null } });
     if (!service) throw new NotFoundException('Service not found');
+
+    if (role === 'VENDOR') {
+      const vendor = await this.prisma.vendorProfile.findUnique({ where: { userId } });
+      if (service.vendorId !== vendor?.id) {
+        throw new NotFoundException('Service not found or unauthorized');
+      }
+    }
+
     await this.prisma.service.update({ where: { id }, data: { deletedAt: new Date() } });
     return { message: 'Service deleted' };
   }
@@ -145,3 +178,4 @@ export class ServicesService {
     });
   }
 }
+
