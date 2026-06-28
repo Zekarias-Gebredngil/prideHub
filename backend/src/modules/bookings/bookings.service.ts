@@ -4,10 +4,14 @@ import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import { CreateBookingDto, UpdateBookingDto, UpdateBookingStatusDto } from './dto/booking.dto';
 import { BookingStatus, UserRole } from '@prisma/client';
 import { JwtUser } from '../../common/decorators/current-user.decorator';
+import { CommissionService } from '../commission/commission.service';
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly commissionService: CommissionService,
+  ) {}
 
   private generateBookingNumber(): string {
     const prefix = 'PH';
@@ -149,6 +153,16 @@ export class BookingsService {
       where: { id },
       data: { status: dto.status },
     });
+
+    // Trigger escrow release on booking completion
+    if (dto.status === BookingStatus.COMPLETED) {
+      await this.prisma.booking.update({ where: { id }, data: { completedAt: new Date() } });
+      try {
+        await this.commissionService.releaseEscrow(id);
+      } catch (_e) {
+        // Escrow may not exist yet if payment hasn't been confirmed — safe to ignore
+      }
+    }
 
     // Create timeline entry on status change
     await this.prisma.timelineEntry.create({
