@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
@@ -30,7 +30,7 @@ interface SidebarLink { label: string; path: string; icon: string; }
 
         <!-- Nav Links -->
         <nav class="flex-1 overflow-y-auto py-4 px-2">
-          @for (link of navLinks; track link.path) {
+          @for (link of navLinks(); track link.path) {
             <a [routerLink]="link.path" routerLinkActive="bg-primary text-white shadow-sm"
                [routerLinkActiveOptions]="{ exact: link.path === '/dashboard' }"
                class="flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 text-gray-600 dark:text-white/60 hover:bg-primary/5 hover:text-primary transition-all group">
@@ -39,6 +39,21 @@ interface SidebarLink { label: string; path: string; icon: string; }
                 <span class="text-sm font-medium">{{ link.label }}</span>
               }
             </a>
+          }
+
+          <!-- Become a Vendor CTA -->
+          @if (showBeVendorCta() && sidebarOpen()) {
+            <div class="mt-4 mx-1 p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <p class="text-xs font-semibold text-primary mb-1">Become a Vendor</p>
+              <p class="text-xs text-gray-500 dark:text-white/50 mb-2">
+                List your services and start earning
+              </p>
+              <a routerLink="/vendor-setup"
+                 class="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
+                <span class="material-icons text-sm">add_business</span>
+                Set up your profile
+              </a>
+            </div>
           }
         </nav>
 
@@ -103,15 +118,42 @@ export class DashboardLayoutComponent {
   readonly auth = inject(AuthService);
   readonly sidebarOpen = signal(true);
 
-  navLinks: SidebarLink[] = [
+  // Core links always visible to any authenticated user
+  readonly coreLinks: SidebarLink[] = [
     { label: 'Overview', path: '/dashboard', icon: 'dashboard' },
     { label: 'My Bookings', path: '/dashboard/bookings', icon: 'event_note' },
     { label: 'Payments', path: '/dashboard/payments', icon: 'payments' },
     { label: 'Messages', path: '/dashboard/messages', icon: 'chat' },
     { label: 'Notifications', path: '/dashboard/notifications', icon: 'notifications' },
     { label: 'Profile', path: '/dashboard/profile', icon: 'person' },
+    { label: 'Security', path: '/dashboard/security', icon: 'security' },
     { label: 'Settings', path: '/dashboard/settings', icon: 'settings' },
   ];
+
+  // Vendor-only links — shown when user has vendor access
+  readonly vendorLinks: SidebarLink[] = [
+    { label: 'Wallet', path: '/dashboard/wallet', icon: 'account_balance_wallet' },
+    { label: 'Subscription', path: '/dashboard/subscription', icon: 'workspace_premium' },
+  ];
+
+  // Visible nav links based on role
+  readonly navLinks = computed<SidebarLink[]>(() => {
+    const core = this.coreLinks;
+    if (this.auth.hasVendorAccess()) {
+      // Insert vendor links after Payments
+      return [
+        ...core.slice(0, 3),
+        ...this.vendorLinks,
+        ...core.slice(3),
+      ];
+    }
+    return core;
+  });
+
+  // Whether to show "Become a Vendor" CTA (only for non-vendor users)
+  readonly showBeVendorCta = computed(() =>
+    !this.auth.hasVendorAccess() && !this.auth.isAdmin() && !this.auth.isPlanner(),
+  );
 
   toggleSidebar() { this.sidebarOpen.set(!this.sidebarOpen()); }
 

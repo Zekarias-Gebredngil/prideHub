@@ -108,5 +108,14 @@ export class AdminLayoutComponent {
         { label: 'Settings', path: '/admin/settings', icon: 'settings' },
       ],
     },
+    {
+      label: 'Financial Engine',
+      links: [
+        { label: 'Commission', path: '/admin/commission', icon: 'percent' },
+        { label: 'Settlement', path: '/admin/settlement', icon: 'account_balance' },
+        { label: 'Subscriptions', path: '/admin/subscriptions', icon: 'workspace_premium' },
+        { label: 'Wallets', path: '/admin/wallets', icon: 'account_balance_wallet' },
+      ],
+    },
   ];
 }
