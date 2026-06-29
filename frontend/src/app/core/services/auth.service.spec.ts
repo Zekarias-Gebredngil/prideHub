@@ -54,7 +54,7 @@ describe('AuthService', () => {
     http.expectOne(`${environment.apiUrl}/auth/login`).flush({
       success: true,
       message: 'Success',
-      data: { accessToken: 'access-token', refreshToken: 'refresh-token', tokenType: 'Bearer' },
+      data: { accessToken: 'access-token', tokenType: 'Bearer' },
       errors: [],
     });
 
