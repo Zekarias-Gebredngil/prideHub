@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, adminGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard, adminGuard, vendorGuard, plannerGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   // ── Public Landing ──────────────────────────────────────────────────────────
@@ -41,6 +41,7 @@ export const routes: Routes = [
       { path: 'reset-password', loadComponent: () => import('./features/auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent) },
       { path: 'verify-email', loadComponent: () => import('./features/auth/verify-email/verify-email.component').then(m => m.VerifyEmailComponent) },
       { path: 'oauth', loadComponent: () => import('./features/auth/oauth-callback/oauth-callback.component').then(m => m.OAuthCallbackComponent) },
+      { path: 'oauth-success', loadComponent: () => import('./features/auth/oauth-callback/oauth-callback.component').then(m => m.OAuthCallbackComponent) },
     ],
   },
 
@@ -59,6 +60,54 @@ export const routes: Routes = [
       { path: 'notifications', loadComponent: () => import('./features/dashboard/notifications/notifications.component').then(m => m.NotificationsComponent) },
       { path: 'profile', loadComponent: () => import('./features/dashboard/profile/profile.component').then(m => m.ProfileComponent) },
       { path: 'settings', loadComponent: () => import('./features/dashboard/settings/settings.component').then(m => m.SettingsComponent) },
+      { path: 'security', loadComponent: () => import('./features/dashboard/security/security.component').then(m => m.SecurityComponent) },
+      { path: 'wallet', loadComponent: () => import('./features/dashboard/wallet/wallet.component').then(m => m.WalletComponent) },
+      { path: 'subscription', loadComponent: () => import('./features/dashboard/subscription/subscription.component').then(m => m.SubscriptionComponent) },
+    ],
+  },
+
+  // ── Vendor Dashboard ─────────────────────────────────────────────────────────
+  {
+    path: 'vendor-dashboard',
+    loadComponent: () => import('./layout/vendor-layout/vendor-layout.component').then(m => m.VendorLayoutComponent),
+    canActivate: [authGuard, vendorGuard],
+    children: [
+      { path: '', loadComponent: () => import('./features/vendor-dashboard/overview/vendor-overview.component').then(m => m.VendorOverviewComponent) },
+      { path: 'wallet', loadComponent: () => import('./features/dashboard/wallet/wallet.component').then(m => m.WalletComponent) },
+      { path: 'subscription', loadComponent: () => import('./features/dashboard/subscription/subscription.component').then(m => m.SubscriptionComponent) },
+      { path: 'bookings', loadComponent: () => import('./features/dashboard/bookings/bookings.component').then(m => m.BookingsComponent) },
+      { path: 'bookings/:id', loadComponent: () => import('./features/dashboard/bookings/booking-detail/booking-detail.component').then(m => m.BookingDetailComponent) },
+      { path: 'messages', loadComponent: () => import('./features/dashboard/messages/messages.component').then(m => m.MessagesComponent) },
+      { path: 'notifications', loadComponent: () => import('./features/dashboard/notifications/notifications.component').then(m => m.NotificationsComponent) },
+      { path: 'profile', loadComponent: () => import('./features/dashboard/profile/profile.component').then(m => m.ProfileComponent) },
+      { path: 'settings', loadComponent: () => import('./features/dashboard/settings/settings.component').then(m => m.SettingsComponent) },
+      { path: 'security', loadComponent: () => import('./features/dashboard/security/security.component').then(m => m.SecurityComponent) },
+      // Vendor-specific (to be expanded)
+      { path: 'services', loadComponent: () => import('./features/vendor-dashboard/services/vendor-services.component').then(m => m.VendorServicesComponent) },
+      { path: 'analytics', loadComponent: () => import('./features/vendor-dashboard/overview/vendor-overview.component').then(m => m.VendorOverviewComponent) },
+      { path: 'reviews', loadComponent: () => import('./features/vendor-dashboard/reviews/vendor-reviews.component').then(m => m.VendorReviewsComponent) },
+    ],
+  },
+
+  // ── Event Planner Dashboard ───────────────────────────────────────────────────
+  {
+    path: 'planner-dashboard',
+    loadComponent: () => import('./layout/planner-layout/planner-layout.component').then(m => m.PlannerLayoutComponent),
+    canActivate: [authGuard, plannerGuard],
+    children: [
+      { path: '', loadComponent: () => import('./features/planner-dashboard/overview/planner-overview.component').then(m => m.PlannerOverviewComponent) },
+      { path: 'bookings', loadComponent: () => import('./features/dashboard/bookings/bookings.component').then(m => m.BookingsComponent) },
+      { path: 'bookings/:id', loadComponent: () => import('./features/dashboard/bookings/booking-detail/booking-detail.component').then(m => m.BookingDetailComponent) },
+      { path: 'messages', loadComponent: () => import('./features/dashboard/messages/messages.component').then(m => m.MessagesComponent) },
+      { path: 'profile', loadComponent: () => import('./features/dashboard/profile/profile.component').then(m => m.ProfileComponent) },
+      { path: 'settings', loadComponent: () => import('./features/dashboard/settings/settings.component').then(m => m.SettingsComponent) },
+      { path: 'security', loadComponent: () => import('./features/dashboard/security/security.component').then(m => m.SecurityComponent) },
+      // Planner-specific (to be expanded)
+      { path: 'events',    loadComponent: () => import('./features/dashboard/bookings/bookings.component').then(m => m.BookingsComponent) },
+      { path: 'clients',   loadComponent: () => import('./features/dashboard/profile/profile.component').then(m => m.ProfileComponent) },
+      { path: 'vendors',   loadComponent: () => import('./features/landing/vendors/vendors.component').then(m => m.VendorsComponent) },
+      { path: 'schedule',  loadComponent: () => import('./features/dashboard/bookings/bookings.component').then(m => m.BookingsComponent) },
+      { path: 'reports',   loadComponent: () => import('./features/dashboard/payments/payments.component').then(m => m.PaymentsComponent) },
     ],
   },
 
@@ -84,6 +133,10 @@ export const routes: Routes = [
       { path: 'reports', loadComponent: () => import('./features/admin/reports/admin-reports.component').then(m => m.AdminReportsComponent) },
       { path: 'crm', loadComponent: () => import('./features/admin/crm/admin-crm.component').then(m => m.AdminCrmComponent) },
       { path: 'settings', loadComponent: () => import('./features/admin/settings/admin-settings.component').then(m => m.AdminSettingsComponent) },
+      { path: 'commission', loadComponent: () => import('./features/admin/commission/admin-commission.component').then(m => m.AdminCommissionComponent) },
+      { path: 'settlement', loadComponent: () => import('./features/admin/settlement/admin-settlement.component').then(m => m.AdminSettlementComponent) },
+      { path: 'subscriptions', loadComponent: () => import('./features/admin/subscriptions/admin-subscriptions.component').then(m => m.AdminSubscriptionsComponent) },
+      { path: 'wallets', loadComponent: () => import('./features/admin/wallets/admin-wallets.component').then(m => m.AdminWalletsComponent) },
     ],
   },
 
@@ -94,7 +147,7 @@ export const routes: Routes = [
     loadComponent: () => import('./features/booking-flow/booking-flow.component').then(m => m.BookingFlowComponent),
   },
 
-  // ── Vendor Setup ──────────────────────────────────────────────────────────────
+  // ── Vendor Setup (redirects to vendor-dashboard after completion) ─────────────
   {
     path: 'vendor-setup',
     canActivate: [authGuard],
@@ -104,3 +157,5 @@ export const routes: Routes = [
   // ── 404 ───────────────────────────────────────────────────────────────────────
   { path: '**', loadComponent: () => import('./features/not-found/not-found.component').then(m => m.NotFoundComponent) },
 ];
+
+
