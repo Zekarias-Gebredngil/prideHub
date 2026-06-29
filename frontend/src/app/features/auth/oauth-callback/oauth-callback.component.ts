@@ -8,9 +8,17 @@ import { AuthService } from '../../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex items-center justify-center gap-3 p-8">
-      <span class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></span>
-      <span class="text-gray-600 dark:text-white/60">Completing sign in...</span>
+    <div class="flex items-center justify-center gap-3 p-8 min-h-screen">
+      @if (error()) {
+        <div class="text-center space-y-4">
+          <span class="material-icons text-4xl text-red-500">error_outline</span>
+          <p class="text-gray-600 dark:text-white/60">{{ error() }}</p>
+          <a href="/auth/login" class="text-primary underline text-sm">Back to login</a>
+        </div>
+      } @else {
+        <span class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></span>
+        <span class="text-gray-600 dark:text-white/60">Completing sign in...</span>
+      }
     </div>
   `,
 })
@@ -19,17 +27,46 @@ export class OAuthCallbackComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
 
-  ngOnInit(): void {
-    const accessToken = this.route.snapshot.queryParamMap.get('accessToken');
-    const refreshToken = this.route.snapshot.queryParamMap.get('refreshToken');
+  readonly error = (() => {
+    let _error = '';
+    return () => _error;
+  })();
 
-    if (accessToken && refreshToken) {
+  private _error = '';
+
+  ngOnInit(): void {
+    // New OAuth flow: backend redirects to /auth/oauth-success?accessToken=...
+    // The refresh token is already set as an HttpOnly cookie by the backend redirect
+    const accessToken = this.route.snapshot.queryParamMap.get('accessToken');
+    const failed = this.route.snapshot.queryParamMap.get('error');
+
+    if (failed) {
+      this._error = 'OAuth sign in failed. Please try again.';
+      setTimeout(() => this.router.navigate(['/auth/login']), 2500);
+      return;
+    }
+
+    if (accessToken) {
       localStorage.setItem('ph_access_token', accessToken);
-      localStorage.setItem('ph_refresh_token', refreshToken);
+      // Fetch the user profile then navigate to their dashboard
       this.authService.loadCurrentUser();
-      this.router.navigate(['/dashboard']);
+      // Give loadCurrentUser a moment then navigate
+      setTimeout(() => {
+        const user = this.authService.currentUser();
+        this.router.navigate([this.authService.dashboardUrlFor(user ?? undefined)]);
+      }, 800);
     } else {
-      this.router.navigate(['/auth/login']);
+      // Legacy fallback: try to refresh using the cookie that was just set
+      this.authService.refreshTokens().subscribe({
+        next: () => {
+          this.authService.loadCurrentUser();
+          setTimeout(() => {
+            const user = this.authService.currentUser();
+            this.router.navigate([this.authService.dashboardUrlFor(user ?? undefined)]);
+          }, 500);
+        },
+        error: () => this.router.navigate(['/auth/login']),
+      });
     }
   }
 }
