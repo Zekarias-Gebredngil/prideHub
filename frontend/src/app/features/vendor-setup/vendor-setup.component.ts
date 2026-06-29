@@ -3,6 +3,7 @@ import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 
 interface Category {
   id: string;
@@ -173,6 +174,7 @@ interface Category {
 export class VendorSetupComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly apiService = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
   readonly categories = signal<Category[]>([]);
@@ -216,7 +218,14 @@ export class VendorSetupComponent implements OnInit {
     this.apiService.post('vendors/profile', payload).subscribe({
       next: () => {
         this.loading.set(false);
-        this.router.navigate(['/dashboard']);
+        // The vendor profile creation promotes the user to VENDOR role in the DB,
+        // but the current JWT still carries role=CLIENT. We must refresh the token
+        // so the new JWT includes role=VENDOR, then reload the user profile.
+        this.auth.refreshTokens().subscribe({
+          next: () => this.auth.loadCurrentUser(),
+          error: () => {},  // if refresh fails we still navigate; guards will re-check
+        });
+        this.router.navigate(['/vendor-dashboard']);
       },
       error: (err) => {
         this.loading.set(false);

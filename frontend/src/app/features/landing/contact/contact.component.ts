@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../core/services/api.service';
@@ -81,7 +81,7 @@ import { ApiService } from '../../../core/services/api.service';
           <div>
             <h2 class="font-display text-3xl font-bold text-dark mb-6">Get in Touch</h2>
             <div class="space-y-5">
-              @for (info of contactInfo; track info.label) {
+              @for (info of contactInfo(); track info.label) {
                 <div class="flex items-start gap-4 p-4 rounded-2xl bg-gray-50">
                   <div class="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                     <span class="material-icons text-primary">{{ info.icon }}</span>
@@ -117,20 +117,42 @@ export class ContactComponent {
   readonly error = signal('');
 
   form = this.fb.group({
-    name:    ['', Validators.required],
-    email:   ['', [Validators.required, Validators.email]],
-    phone:   [''],
+    name: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    phone: [''],
     subject: ['', Validators.required],
     message: ['', [Validators.required, Validators.minLength(20)]],
   });
+  contactInfo = signal([
+    { icon: 'location_on', label: 'Office Address', key: 'site.address', value: 'Bole Road, Addis Ababa, Ethiopia', sub: 'Mon–Sat, 8am–6pm' },
+    { icon: 'phone', label: 'Phone', key: 'site.phone', value: '+251 911 234 567', sub: 'Available 7 days a week' },
+    { icon: 'email', label: 'Email', key: 'site.email', value: 'info@pridehub.com', sub: 'We reply within 24 hours' },
+    { icon: 'language', label: 'Languages', key: 'site.languages', value: 'English, Amharic, Oromo', sub: undefined },
+  ]);
 
-  contactInfo = [
-    { icon: 'location_on', label: 'Office Address', value: 'Bole Road, Addis Ababa, Ethiopia', sub: 'Mon–Sat, 8am–6pm' },
-    { icon: 'phone', label: 'Phone', value: '+251 911 234 567', sub: 'Available 7 days a week' },
-    { icon: 'email', label: 'Email', value: 'info@pridehub.com', sub: 'We reply within 24 hours' },
-    { icon: 'language', label: 'Languages', value: 'English, Amharic, Oromo', sub: undefined },
-  ];
-
+  ngOnInit() {
+    this.api.get<any[]>('settings/public').subscribe({
+      next: (settings) => {
+        const info = this.contactInfo();
+        const updated = info.map(item => {
+          const setting = settings.find(s => s.key === item.key);
+          if (setting && setting.value) {
+            return { ...item, value: setting.value as string };
+          }
+          return item;
+        });
+        
+        // Check for custom office hours
+        const officeHours = settings.find(s => s.key === 'contact.officeHours');
+        if (officeHours) {
+          updated[0].sub = officeHours.value as string;
+        }
+        
+        this.contactInfo.set(updated);
+      },
+      error: () => {} // fallback to default
+    });
+  }
   onSubmit(): void {
     if (this.form.invalid) return;
     this.loading.set(true);
