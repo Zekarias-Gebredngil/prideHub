@@ -23,6 +23,7 @@ export class AdminServicesComponent {
     fields: [
       { key: 'name', label: 'Name', required: true },
       { key: 'categoryId', label: 'Category', type: 'select', required: true, optionsEndpoint: 'services/categories' },
+      { key: 'vendorId', label: 'Vendor', type: 'select', optionsEndpoint: 'vendors', optionLabel: 'businessName' },
       { key: 'coverImage', label: 'Cover Image', type: 'image' },
       { key: 'shortDesc', label: 'Short Description', type: 'textarea' },
       { key: 'description', label: 'Description', type: 'textarea' },
