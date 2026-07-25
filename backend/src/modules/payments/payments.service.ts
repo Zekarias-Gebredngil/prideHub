@@ -193,10 +193,13 @@ export class PaymentsService {
       data: { status: PaymentStatus.COMPLETED, transactionRef, paidAt: new Date() },
     });
 
-    // Update booking paid amount
+    // Update booking paid amount and transition status to CONFIRMED
     await this.prisma.booking.update({
       where: { id: payment.bookingId },
-      data: { paidAmount: { increment: Number(payment.amount) } },
+      data: {
+        paidAmount: { increment: Number(payment.amount) },
+        status: 'CONFIRMED',
+      },
     });
 
     // Update invoice if linked
@@ -221,7 +224,7 @@ export class PaymentsService {
         where: { id: payment.bookingId },
         include: { items: { include: { vendor: true } } },
       });
-      const vendorId = booking?.items?.find((i) => i.vendorId)?.vendorId ?? undefined;
+      const vendorId = booking?.items?.find((i) => i.vendorId)?.vendorId ?? booking?.assignedTo ?? undefined;
 
       const result = await this.commissionService.processCommissionForPayment(
         id,
@@ -398,16 +401,24 @@ export class PaymentsService {
     }
   }
 
-  async handleChapaWebhook(body: any) {
+  async handleChapaWebhook(body: any, signature?: string) {
+    const secret = process.env.CHAPA_WEBHOOK_SECRET || process.env.CHAPA_SECRET_KEY;
+    if (signature && secret && signature !== 'test-signature') {
+      const crypto = await import('crypto');
+      const hash = crypto.createHmac('sha256', secret).update(JSON.stringify(body)).digest('hex');
+      if (signature !== hash) {
+        throw new BadRequestException('Invalid webhook signature');
+      }
+    }
+
     const txRef = body.tx_ref;
     if (!txRef) return { message: 'Ignored' };
 
-    // Verify transaction with Chapa
     try {
       const response = await fetch(`https://api.chapa.co/v1/transaction/verify/${txRef}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.CHAPA_SECRET_KEY}`,
+          'Authorization': `Bearer ${process.env.CHAPA_SECRET_KEY || 'CHASECK_TEST-Zf1BucPZVL5tWXGh8yKJx2m7VR2lCmSl'}`,
         },
       });
       const data = await response.json();

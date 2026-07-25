@@ -17,6 +17,11 @@ export class SettingsController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Get('all')
+  getAllSettings() { return this.settingsService.getAllSettings(); }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @Get('group/:group')
   getByGroup(@Param('group') group: string) { return this.settingsService.getByGroup(group); }
 

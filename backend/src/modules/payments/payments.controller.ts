@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Res } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Res, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService, CreatePaymentDto, CreateInvoiceDto } from './payments.service';
 import { InvoicePdfService } from './invoice-pdf.service';
@@ -104,7 +104,7 @@ export class PaymentsController {
   @Public()
   @Post('webhook/chapa')
   @ApiOperation({ summary: 'Chapa webhook callback' })
-  handleChapaWebhook(@Body() body: any) {
-    return this.paymentsService.handleChapaWebhook(body);
+  handleChapaWebhook(@Body() body: any, @Headers('x-chapa-signature') signature?: string) {
+    return this.paymentsService.handleChapaWebhook(body, signature);
   }
 }

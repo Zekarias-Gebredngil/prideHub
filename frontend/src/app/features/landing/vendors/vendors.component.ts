@@ -25,16 +25,16 @@ import { StarRatingComponent } from '../../../shared/components/star-rating/star
 
     <section class="section bg-white">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-wrap gap-3 mb-8">
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 mb-8 scrollbar-none">
           <button (click)="selectedCat.set(''); load()"
-                  class="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                  [class]="!selectedCat() ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">
-            All
+                  class="px-4 py-2 rounded-xl text-sm font-medium transition-colors shrink-0 whitespace-nowrap"
+                  [class]="!selectedCat() ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/80 hover:bg-gray-200'">
+            All Categories
           </button>
           @for (cat of categories(); track cat.id) {
             <button (click)="selectedCat.set(cat.id); load()"
-                    class="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                    [class]="selectedCat() === cat.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">
+                    class="px-4 py-2 rounded-xl text-sm font-medium transition-colors shrink-0 whitespace-nowrap"
+                    [class]="selectedCat() === cat.id ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/80 hover:bg-gray-200'">
               {{ cat.icon }} {{ cat.name }}
             </button>
           }

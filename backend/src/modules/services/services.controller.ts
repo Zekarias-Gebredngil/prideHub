@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { ServicesService, CreateServiceDto, UpdateServiceDto } from './services.service';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { ServicesService, CreateServiceDto, UpdateServiceDto, ServiceQueryDto } from './services.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -17,8 +16,8 @@ export class ServicesController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'Get all services' })
-  findAll(@Query() dto: PaginationDto, @Query('categoryId') categoryId?: string, @Query('vendorId') vendorId?: string) {
-    return this.servicesService.findAll(dto, categoryId, vendorId);
+  findAll(@Query() query: ServiceQueryDto, @CurrentUser() user?: any) {
+    return this.servicesService.findAll(query, query.categoryId, query.vendorId, user?.sub);
   }
 
   @Public()
@@ -33,6 +32,14 @@ export class ServicesController {
   @ApiOperation({ summary: 'Get service categories' })
   getCategories() {
     return this.servicesService.getCategories();
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Get('mine')
+  @ApiOperation({ summary: 'Get my services (authenticated vendor)' })
+  findMine(@CurrentUser() user: any) {
+    return this.servicesService.findMine(user.sub);
   }
 
   @Public()

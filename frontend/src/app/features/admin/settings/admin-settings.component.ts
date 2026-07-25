@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
+import { ImageUploaderComponent } from '../../../shared/components/image-uploader/image-uploader.component';
 
 interface SettingRow {
   key: string;
@@ -14,7 +15,7 @@ interface SettingRow {
 @Component({
   selector: 'app-admin-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUploaderComponent],
   template: `
     <section class="space-y-5">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -30,6 +31,7 @@ interface SettingRow {
 
       <div class="flex gap-3">
         <select [(ngModel)]="group" (change)="load()" class="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-dark dark:text-white">
+          <option value="branding">Branding & Logo</option>
           <option value="general">General</option>
           <option value="site">Site</option>
           <option value="booking">Booking</option>
@@ -58,11 +60,19 @@ interface SettingRow {
               <input [(ngModel)]="form.group" name="group"
                      class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm text-dark dark:text-white">
             </label>
-            <label class="space-y-1 md:col-span-2">
-              <span class="text-xs font-medium text-gray-500">Value</span>
-              <textarea [(ngModel)]="valueText" name="value" rows="3"
-                        class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm text-dark dark:text-white"></textarea>
-            </label>
+
+            <!-- Image Upload if key contains logo, image, avatar or cover -->
+            @if (isImageKey(form.key)) {
+              <div class="md:col-span-2">
+                <app-image-uploader [(imageUrl)]="valueText" [label]="'Upload File for ' + form.key" />
+              </div>
+            } @else {
+              <label class="space-y-1 md:col-span-2">
+                <span class="text-xs font-medium text-gray-500">Value</span>
+                <textarea [(ngModel)]="valueText" name="value" rows="3"
+                          class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm text-dark dark:text-white"></textarea>
+              </label>
+            }
             <label class="space-y-1 md:col-span-2">
               <span class="text-xs font-medium text-gray-500">Description</span>
               <input [(ngModel)]="form.description" name="description"
@@ -186,6 +196,11 @@ export class AdminSettingsComponent {
         this.saving.set(false);
       },
     });
+  }
+
+  isImageKey(key: string): boolean {
+    const k = (key || '').toLowerCase();
+    return k.includes('logo') || k.includes('image') || k.includes('avatar') || k.includes('cover') || k.includes('photo');
   }
 
   stringify(value: unknown): string {

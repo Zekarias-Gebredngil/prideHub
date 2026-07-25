@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet, RouterLink } from '@angular/router';
+import { SystemSettingsService } from '../../core/services/system-settings.service';
 
 @Component({
   selector: 'app-auth-layout',
@@ -16,12 +17,12 @@ import { RouterOutlet, RouterLink } from '@angular/router';
 
         <div class="relative z-10 flex flex-col justify-center px-16">
           <a routerLink="/" class="flex items-center gap-3 mb-12">
-            <div class="w-14 h-14 rounded-2xl bg-secondary/20 border border-secondary/30 flex items-center justify-center">
-            <img src="assets/images/prideHub logo.png" alt="PrideHub Logo" class="w-13 h-13">
+            <div class="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden">
+              <img [src]="systemSettings.logo()" [alt]="systemSettings.siteName()" class="w-12 h-12 object-contain">
             </div>
             <div>
-              <h1 class="text-white font-display font-bold text-3xl">PrideHub</h1>
-              <p class="text-white/60 text-sm">Event Management Platform</p>
+              <h1 class="text-white font-display font-bold text-3xl">{{ systemSettings.siteName() }}</h1>
+              <p class="text-white/60 text-sm">{{ systemSettings.tagline() }}</p>
             </div>
           </a>
 
@@ -64,6 +65,7 @@ import { RouterOutlet, RouterLink } from '@angular/router';
   `,
 })
 export class AuthLayoutComponent {
+  readonly systemSettings = inject(SystemSettingsService);
   stats = [
     { value: '500+', label: 'Events Planned' },
     { value: '200+', label: 'Happy Clients' },

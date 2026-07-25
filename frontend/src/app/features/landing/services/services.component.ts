@@ -23,16 +23,16 @@ import { Service } from '../../../core/models/content.model';
     <section class="section bg-white">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Filters -->
-        <div class="flex flex-wrap gap-3 mb-8">
-          <button (click)="selectedCat.set('')"
-                  class="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                  [class]="!selectedCat() ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">
-            All
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
+          <button (click)="selectedCat.set(''); loadServices()"
+                  class="px-4 py-2 rounded-xl text-sm font-medium transition-colors shrink-0 whitespace-nowrap"
+                  [class]="!selectedCat() ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">
+            All Categories
           </button>
           @for (cat of categories(); track cat.id) {
             <button (click)="selectedCat.set(cat.id); loadServices()"
-                    class="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                    [class]="selectedCat() === cat.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">
+                    class="px-4 py-2 rounded-xl text-sm font-medium transition-colors shrink-0 whitespace-nowrap"
+                    [class]="selectedCat() === cat.id ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">
               {{ cat.name }}
             </button>
           }
@@ -53,10 +53,10 @@ import { Service } from '../../../core/models/content.model';
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @for (s of services(); track s.id) {
               <a [routerLink]="['/services', s.slug]"
-                 class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-luxury border border-gray-100 transition-all duration-300 hover:-translate-y-1">
+                 class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-luxury border border-gray-100 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between">
                 <div class="h-48 bg-gradient-to-br from-primary/10 to-secondary/10 overflow-hidden relative">
                   @if (s.coverImage) {
-                    <img [src]="s.coverImage" [alt]="s.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    <img [src]="resolvedUrl(s.coverImage)" [alt]="s.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                   } @else {
                     <div class="w-full h-full flex items-center justify-center">
                       <span class="material-icons text-5xl text-gray-200">room_service</span>
@@ -142,5 +142,11 @@ export class ServicesComponent implements OnInit {
   loadMore() {
     this.page.update(p => p + 1);
     this.loadServices(true);
+  }
+
+  resolvedUrl(url?: string): string {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return `${this.api.baseUrl.replace('/api/v1', '')}${url}`;
   }
 }

@@ -22,6 +22,11 @@ export class CreateVenueDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
+  coverImage?: string;
+
+  @IsOptional()
+  @IsString()
   address?: string;
 
   @IsOptional()
@@ -84,6 +89,15 @@ export class CreateVenueDto {
   @IsString()
   @MaxLength(300)
   seoDesc?: string;
+
+  @IsOptional()
+  @IsString()
+  vendorId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  contactPhone?: string;
 }
 
 export class UpdateVenueDto extends PartialType(CreateVenueDto) {}
@@ -159,6 +173,15 @@ export class VenuesService {
           orderBy: { createdAt: 'desc' },
         },
         availability: { where: { date: { gte: new Date() } }, take: 60 },
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            logo: true,
+            slug: true,
+            user: { select: { id: true, fullName: true, avatar: true } },
+          },
+        },
       },
     });
     if (!venue) throw new NotFoundException('Venue not found');

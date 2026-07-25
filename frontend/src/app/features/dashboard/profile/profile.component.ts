@@ -5,11 +5,12 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { ImageUploaderComponent } from '../../../shared/components/image-uploader/image-uploader.component';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ImageUploaderComponent],
   template: `
     <div>
       <h1 class="font-display text-2xl font-bold text-dark dark:text-white mb-6">My Profile</h1>
@@ -73,10 +74,11 @@ import { environment } from '../../../../environments/environment';
                 <input type="email" formControlName="email"
                        class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-dark dark:text-white text-sm focus:outline-none focus:border-primary transition-colors">
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-white/70 mb-1">Phone</label>
-                <input type="tel" formControlName="phone"
-                       class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-dark dark:text-white text-sm focus:outline-none focus:border-primary transition-colors">
+              <div class="mb-4">
+                <app-image-uploader [imageUrl]="form.get('avatar')?.value || ''"
+                                   (imageUrlChange)="form.get('avatar')?.setValue($event)"
+                                   label="Profile Avatar Photo"
+                                   hint="Upload your personal profile photo" />
               </div>
               <button type="submit" [disabled]="form.invalid || saving()"
                       class="px-6 py-3 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-900 disabled:opacity-50 flex items-center gap-2 transition-colors">
@@ -231,6 +233,7 @@ export class ProfileComponent implements OnInit {
     lastName:  [this.auth.currentUser()?.lastName || '', Validators.required],
     email:     [this.auth.currentUser()?.email || '', [Validators.required, Validators.email]],
     phone:     [this.auth.currentUser()?.phone || ''],
+    avatar:    [this.auth.currentUser()?.avatar || ''],
   });
 
   vendorForm?: FormGroup;

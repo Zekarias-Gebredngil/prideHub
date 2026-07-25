@@ -30,12 +30,15 @@ import { FaqModule } from './modules/faq/faq.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { RolesModule } from './modules/roles/roles.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { SmsModule } from './modules/sms/sms.module';
 // ── Financial Engine Modules ──────────────────────────────────────────────────
 import { CommissionModule } from './modules/commission/commission.module';
 import { SettlementModule } from './modules/settlement/settlement.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -45,6 +48,12 @@ import redisConfig from './config/redis.config';
 
 @Module({
   imports: [
+    // ── Static File Serving ──────────────────────────────────────────────
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
+
     // ── Config ──────────────────────────────────────────────────────────────
     ConfigModule.forRoot({
       isGlobal: true,
@@ -99,6 +108,7 @@ import redisConfig from './config/redis.config';
     ContactModule,
     DashboardModule,
     SettingsModule,
+    RolesModule,
     GatewayModule,
     SmsModule,
     // ── Financial Engine ────────────────────────────────────────────────────

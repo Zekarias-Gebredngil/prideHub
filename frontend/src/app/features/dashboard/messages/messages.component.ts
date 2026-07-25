@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Message } from '../../../core/models/content.model';
@@ -9,16 +10,29 @@ import { Message } from '../../../core/models/content.model';
   selector: 'app-messages',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  styles: [`
+    .messages-layout { display: flex; height: calc(100vh - 8rem); overflow: hidden; }
+    @media (max-width: 767px) {
+      .inbox-panel { width: 100% !important; border-right: none !important; }
+      .inbox-panel.hidden-mobile { display: none !important; }
+      .conversation-panel { width: 100% !important; }
+      .conversation-panel.hidden-mobile { display: none !important; }
+    }
+  `],
   template: `
     <div class="flex h-[calc(100vh-8rem)] gap-0 rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-sm bg-white dark:bg-dark">
 
-      <!-- Inbox List -->
-      <div class="w-72 flex-shrink-0 border-r border-gray-100 dark:border-white/10 flex flex-col">
-        <div class="p-4 border-b border-gray-100 dark:border-white/10">
+      <!-- Inbox Panel -->
+      <div class="w-full md:w-72 flex-shrink-0 border-r border-gray-100 dark:border-white/10 flex flex-col"
+           [class.hidden]="!showInbox() && isMobile()">
+        <div class="p-4 border-b border-gray-100 dark:border-white/10 flex items-center justify-between">
           <h2 class="font-semibold text-dark dark:text-white">Messages</h2>
+          @if (inbox().length > 0) {
+            <span class="text-xs text-gray-400">{{ inbox().length }} chats</span>
+          }
         </div>
         <div class="flex-1 overflow-y-auto">
-          @if (inbox().length === 0) {
+          @if (inbox().length === 0 && !activeUserId()) {
             <div class="p-6 text-center text-gray-400 text-sm">
               <span class="material-icons text-4xl text-gray-200 block mb-2">chat_bubble_outline</span>
               No conversations yet
@@ -27,7 +41,7 @@ import { Message } from '../../../core/models/content.model';
             @for (msg of inbox(); track msg.id) {
               <button (click)="openConversation(getCounterpart(msg)!.id)"
                       class="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-left border-b border-gray-50 dark:border-white/5"
-                      [class.bg-primary/5]="activeUserId() === getCounterpart(msg)!.id">
+                      [class.bg-primary\/5]="activeUserId() === getCounterpart(msg)!.id">
                 <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                   {{ getCounterpart(msg)?.fullName?.[0] || 'U' }}
                 </div>
@@ -44,8 +58,9 @@ import { Message } from '../../../core/models/content.model';
         </div>
       </div>
 
-      <!-- Conversation -->
-      <div class="flex-1 flex flex-col">
+      <!-- Conversation Panel -->
+      <div class="flex-1 flex flex-col"
+           [class.hidden]="showInbox() && isMobile()">
         @if (!activeUserId()) {
           <div class="flex-1 flex flex-col items-center justify-center text-center p-8">
             <span class="material-icons text-6xl text-gray-200 block mb-4">forum</span>
@@ -55,12 +70,17 @@ import { Message } from '../../../core/models/content.model';
         } @else {
           <!-- Header -->
           <div class="flex items-center gap-3 p-4 border-b border-gray-100 dark:border-white/10">
-            <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+            <!-- Back button on mobile -->
+            <button class="md:hidden p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 mr-1"
+                    (click)="showInbox.set(true)">
+              <span class="material-icons text-xl">arrow_back</span>
+            </button>
+            <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
               {{ activeUser()?.fullName?.[0] || 'U' }}
             </div>
-            <div>
-              <p class="font-semibold text-dark dark:text-white text-sm">{{ activeUser()?.fullName || 'User' }}</p>
-              <p class="text-green-500 text-xs">Online</p>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-dark dark:text-white text-sm truncate">{{ activeUser()?.fullName || 'User' }}</p>
+              <p class="text-green-500 text-xs">Active Conversation</p>
             </div>
           </div>
 
@@ -68,7 +88,7 @@ import { Message } from '../../../core/models/content.model';
           <div #messagesContainer class="flex-1 overflow-y-auto p-4 space-y-3">
             @for (msg of messages(); track msg.id) {
               <div class="flex" [class.justify-end]="msg.senderId === auth.currentUser()?.id">
-                <div class="max-w-xs lg:max-w-md">
+                <div class="max-w-[75%] md:max-w-md">
                   <div class="px-4 py-2.5 rounded-2xl text-sm"
                        [class]="msg.senderId === auth.currentUser()?.id
                          ? 'bg-primary text-white rounded-br-sm'
@@ -94,13 +114,19 @@ import { Message } from '../../../core/models/content.model';
           </div>
 
           <!-- Input -->
-          <div class="p-4 border-t border-gray-100 dark:border-white/10">
-            <div class="flex items-center gap-3">
-              <input [(ngModel)]="newMessage" (keyup.enter)="sendMessage()" type="text"
+          <div class="p-3 md:p-4 border-t border-gray-100 dark:border-white/10">
+            @if (isTyping()) {
+              <p class="text-xs text-primary font-medium animate-pulse mb-2 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+                <span>User is typing a message...</span>
+              </p>
+            }
+            <div class="flex items-center gap-2">
+              <input [(ngModel)]="newMessage" (input)="onTyping()" (keyup.enter)="sendMessage()" type="text"
                      placeholder="Type a message..."
                      class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-dark dark:text-white text-sm focus:outline-none focus:border-primary transition-colors">
               <button (click)="sendMessage()" [disabled]="!newMessage.trim()"
-                      class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-primary-900 disabled:opacity-40 transition-colors">
+                      class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-primary-900 disabled:opacity-40 transition-colors shrink-0">
                 <span class="material-icons text-base">send</span>
               </button>
             </div>
@@ -113,17 +139,40 @@ import { Message } from '../../../core/models/content.model';
 export class MessagesComponent implements OnInit, AfterViewChecked {
   @ViewChild('messagesContainer') private container!: ElementRef;
   private readonly api = inject(ApiService);
+  private readonly route = inject(ActivatedRoute);
   readonly auth = inject(AuthService);
 
   readonly inbox = signal<Message[]>([]);
   readonly messages = signal<Message[]>([]);
   readonly activeUserId = signal('');
   readonly activeUser = signal<any>(null);
+  readonly showInbox = signal(true);
   newMessage = '';
+
+  isMobile(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth < 768;
+  }
 
   ngOnInit(): void {
     this.api.get<any>('messages/inbox').subscribe({
-      next: (data) => this.inbox.set(Array.isArray(data) ? data : data.data || []),
+      next: (data) => {
+        const inboxList = Array.isArray(data) ? data : data.data || [];
+        this.inbox.set(inboxList);
+
+        // Check for target receiverId in query parameters
+        const targetReceiverId = this.route.snapshot.queryParams['receiverId'];
+        if (targetReceiverId) {
+          this.openConversation(targetReceiverId);
+        } else if (inboxList.length > 0) {
+          const firstTarget = this.getCounterpart(inboxList[0]);
+          if (firstTarget?.id) {
+            // On desktop, auto-open first conversation; on mobile, stay on inbox
+            if (!this.isMobile()) {
+              this.openConversation(firstTarget.id);
+            }
+          }
+        }
+      },
     });
   }
 
@@ -135,8 +184,19 @@ export class MessagesComponent implements OnInit, AfterViewChecked {
 
   openConversation(userId: string): void {
     this.activeUserId.set(userId);
+    this.showInbox.set(false); // on mobile: switch to conversation view
+
     const found = this.inbox().find(m => this.getCounterpart(m)?.id === userId);
-    this.activeUser.set(found ? this.getCounterpart(found) : null);
+    if (found) {
+      this.activeUser.set(this.getCounterpart(found));
+    } else {
+      // Fetch user profile if not in current inbox snapshot
+      this.api.get<any>(`users/${userId}`).subscribe({
+        next: (u) => this.activeUser.set({ id: u.id, fullName: u.fullName || u.email, avatar: u.avatar }),
+        error: () => this.activeUser.set({ id: userId, fullName: 'User' }),
+      });
+    }
+
     this.api.get<any>(`messages/${userId}`).subscribe({
       next: (data) => this.messages.set(data.data || data || []),
     });
@@ -149,12 +209,31 @@ export class MessagesComponent implements OnInit, AfterViewChecked {
     return message.sender || null;
   }
 
+  readonly isTyping = signal(false);
+  private typingTimeout: any;
+
+  onTyping(): void {
+    if (!this.newMessage.trim()) {
+      this.isTyping.set(false);
+      return;
+    }
+    clearTimeout(this.typingTimeout);
+    this.typingTimeout = setTimeout(() => this.isTyping.set(false), 2500);
+  }
+
   sendMessage(): void {
     const content = this.newMessage.trim();
     if (!content || !this.activeUserId()) return;
+    this.isTyping.set(false);
     this.newMessage = '';
     this.api.post<Message>('messages', { receiverId: this.activeUserId(), content }).subscribe({
-      next: (msg) => this.messages.update(ms => [...ms, msg]),
+      next: (msg) => {
+        this.messages.update(ms => [...ms, msg]);
+        // Refresh inbox to show updated last message
+        this.api.get<any>('messages/inbox').subscribe({
+          next: (data) => this.inbox.set(Array.isArray(data) ? data : data.data || []),
+        });
+      },
     });
   }
 }

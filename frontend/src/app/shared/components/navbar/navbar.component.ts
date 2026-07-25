@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, Subject, switchMap, tap, catchError, of } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
+import { SystemSettingsService } from '../../../core/services/system-settings.service';
 
 interface NavLink { label: string; path: string; children?: NavLink[]; }
 interface SearchResult {
@@ -30,11 +31,11 @@ interface SearchResponse { results: SearchResult[]; counts?: Record<string, numb
           <!-- Logo -->
           <a routerLink="/" class="flex items-center gap-3 group">
             <div class="w-12 h-11 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-              <img src="assets/images/prideHub logo.png" alt="PrideHub Logo" class="w-10 h-10">
+              <img [src]="systemSettings.logo()" [alt]="systemSettings.siteName()" class="w-10 h-10 object-contain">
             </div>
             <div class="hidden sm:block">
-              <!-- <span class="font-display font-bold text-xl" [class]="logoTextClass()">PrideHub</span> -->
-              <p class="text-xs opacity-60 leading-none" [class]="logoTaglineClass()">Where Every Celebration Comes to Life</p>
+              <span class="font-display font-bold text-xl block leading-tight" [class]="logoTextClass()">{{ systemSettings.siteName() }}</span>
+              <p class="text-xs opacity-60 leading-none" [class]="logoTaglineClass()">{{ systemSettings.tagline() }}</p>
             </div>
           </a>
 
@@ -197,6 +198,8 @@ export class NavbarComponent {
     { label: 'Blog', path: '/blog' },
     { label: 'Contact', path: '/contact' },
   ];
+
+  readonly systemSettings = inject(SystemSettingsService);
 
   constructor() {
     const sub = this.searchTerms.pipe(

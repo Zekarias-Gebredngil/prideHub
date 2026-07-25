@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
+import { SystemSettingsService } from '../../../core/services/system-settings.service';
 
 @Component({
   selector: 'app-footer',
@@ -19,11 +20,11 @@ import { ApiService } from '../../../core/services/api.service';
           <div class="lg:col-span-1">
             <div class="flex items-center gap-3 mb-5">
               <div class="w-11 h-11 rounded-full bg-white flex items-center justify-center">
-                <img src="assets/images/prideHub logo.png" alt="PrideHub Logo" class="w-10 h-10">
+                <img [src]="systemSettings.logo()" [alt]="systemSettings.siteName()" class="w-10 h-10 object-contain">
               </div>
               <div>
-              
-                <p class="text-xs text-white/50">Where Every Celebration Comes to Life</p>
+                <span class="font-display font-bold text-xl block leading-tight text-white">{{ systemSettings.siteName() }}</span>
+                <p class="text-xs text-white/50">{{ systemSettings.tagline() }}</p>
               </div>
             </div>
             <p class="text-white/60 text-sm leading-relaxed mb-5">
@@ -121,6 +122,7 @@ import { ApiService } from '../../../core/services/api.service';
 export class FooterComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly fb = inject(FormBuilder);
+  readonly systemSettings = inject(SystemSettingsService);
 
   currentYear = new Date().getFullYear();
   readonly newsletterLoading = signal(false);

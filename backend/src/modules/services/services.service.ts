@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsNumber, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsNumber, IsObject, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationDto, paginate } from '../../common/dto/pagination.dto';
 import slugify from 'slugify';
@@ -41,7 +41,7 @@ export class CreateServiceDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(2000)
   coverImage?: string;
 
   @IsOptional()
@@ -61,6 +61,20 @@ export class CreateServiceDto {
   @IsString()
   @MaxLength(300)
   seoDesc?: string;
+
+  @IsOptional()
+  @IsObject()
+  metadata?: any;
+}
+
+export class ServiceQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  vendorId?: string;
 }
 
 export class UpdateServiceDto extends PartialType(CreateServiceDto) { }
@@ -74,27 +88,60 @@ export class ServicesService {
   }
 
   async create(dto: CreateServiceDto, userId?: string, role?: string) {
-    let vendorId: string | undefined;
+    let vendorId: string | undefined = dto.vendorId;
     if (role === 'VENDOR' && userId) {
-      const vendor = await this.prisma.vendorProfile.findUnique({ where: { userId } });
-      if (!vendor) throw new NotFoundException('Vendor profile not found');
+      let vendor = await this.prisma.vendorProfile.findUnique({ where: { userId } });
+      if (!vendor) {
+        let firstCategory = await this.prisma.vendorCategory.findFirst();
+        if (!firstCategory) {
+          firstCategory = await this.prisma.vendorCategory.create({
+            data: { name: 'General Services', slug: 'general-services' }
+          });
+        }
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        vendor = await this.prisma.vendorProfile.create({
+          data: {
+            userId,
+            businessName: user?.fullName || 'My Business',
+            slug: this.makeSlug(user?.fullName || 'vendor-' + userId.substring(0, 6)),
+            categoryId: firstCategory.id,
+          },
+        });
+      }
       vendorId = vendor.id;
     }
 
+    const { metadata, ...rest } = dto;
+
     return this.prisma.service.create({
-      data: { ...dto, vendorId, slug: this.makeSlug(dto.name) },
+      data: {
+        ...rest,
+        vendorId,
+        slug: this.makeSlug(dto.name),
+        metadata: metadata ? (metadata as any) : undefined,
+      },
       include: { category: true },
     });
   }
 
-  async findAll(dto: PaginationDto, categoryId?: string, vendorId?: string) {
+  async findAll(dto: ServiceQueryDto, categoryId?: string, vendorId?: string, currentUserId?: string) {
+    let targetVendorId = vendorId || dto.vendorId;
+    if (targetVendorId === 'me' && currentUserId) {
+      const vendor = await this.prisma.vendorProfile.findUnique({ where: { userId: currentUserId } });
+      targetVendorId = vendor?.id || '00000000-0000-0000-0000-000000000000';
+    }
+
+    const effectiveCatId = categoryId || dto.categoryId;
+
     const where: any = {
-      isActive: true,
       deletedAt: null,
-      ...(categoryId && { categoryId }),
-      ...(vendorId && { vendorId }),
+      ...(effectiveCatId && { categoryId: effectiveCatId }),
+      ...(targetVendorId && { vendorId: targetVendorId }),
       ...(dto.search && { name: { contains: dto.search, mode: 'insensitive' } }),
     };
+    if (!targetVendorId) {
+      where.isActive = true;
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.service.findMany({
@@ -102,7 +149,20 @@ export class ServicesService {
         skip: dto.skip,
         take: dto.take,
         orderBy: dto.sortBy ? { [dto.sortBy]: dto.sortOrder } : { sortOrder: 'asc' },
-        include: { category: true, media: { take: 1 } },
+        include: {
+          category: true,
+          media: { take: 1 },
+          vendor: {
+            select: {
+              id: true,
+              businessName: true,
+              logo: true,
+              slug: true,
+              averageRating: true,
+              isVerified: true,
+            },
+          },
+        },
       }),
       this.prisma.service.count({ where }),
     ]);
@@ -114,6 +174,40 @@ export class ServicesService {
     return this.prisma.service.findMany({
       where: { isFeatured: true, isActive: true, deletedAt: null },
       take: 6,
+      orderBy: { sortOrder: 'asc' },
+      include: { category: true, media: { take: 1 } },
+    });
+  }
+
+  async findMine(userId: string) {
+    // Get or auto-create vendor profile
+    let vendor = await this.prisma.vendorProfile.findUnique({ where: { userId } });
+    if (!vendor) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) return [];
+      let firstCategory = await this.prisma.vendorCategory.findFirst();
+      if (!firstCategory) {
+        firstCategory = await this.prisma.vendorCategory.create({
+          data: { name: 'General Services', slug: 'general-services' },
+        });
+      }
+      vendor = await this.prisma.vendorProfile.create({
+        data: {
+          userId,
+          businessName: user.fullName || 'My Business',
+          slug: this.makeSlug(user.fullName || 'vendor-' + userId.substring(0, 6)),
+          categoryId: firstCategory.id,
+        },
+      });
+      await this.prisma.vendorWallet.upsert({
+        where: { vendorId: vendor.id },
+        create: { vendorId: vendor.id },
+        update: {},
+      });
+    }
+
+    return this.prisma.service.findMany({
+      where: { vendorId: vendor.id, deletedAt: null },
       orderBy: { sortOrder: 'asc' },
       include: { category: true, media: { take: 1 } },
     });
@@ -148,9 +242,15 @@ export class ServicesService {
       }
     }
 
+    const { metadata, ...rest } = dto;
+
     return this.prisma.service.update({
       where: { id },
-      data: { ...dto, slug: dto.name ? this.makeSlug(dto.name) : undefined },
+      data: {
+        ...rest,
+        slug: dto.name ? this.makeSlug(dto.name) : undefined,
+        metadata: metadata ? (metadata as any) : undefined,
+      },
       include: { category: true },
     });
   }

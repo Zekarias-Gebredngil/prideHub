@@ -65,6 +65,7 @@ export interface Venue {
   amenities?: Record<string, boolean>;
   coverImage?: string;
   isFeatured: boolean;
+  isActive?: boolean;
   averageRating: number;
   totalReviews: number;
   media?: Media[];
@@ -114,35 +115,48 @@ export interface BlogPost {
 export interface BlogComment {
   id: string;
   postId: string;
-  parentId?: string;
   authorName: string;
   authorEmail: string;
   content: string;
   isApproved: boolean;
   createdAt: string;
-  replies?: BlogComment[];
-}
-
-export interface GalleryAlbum {
-  id: string;
-  title: string;
-  slug: string;
-  description?: string;
-  coverImage?: string;
-  category?: string;
-  media?: Media[];
-  _count?: { media: number };
 }
 
 export interface Media {
   id: string;
   url: string;
   thumbUrl?: string;
-  title?: string;
-  type: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'AUDIO';
-  altText?: string;
+  type: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT';
+  mimeType: string;
+  size: number;
   width?: number;
   height?: number;
+  title?: string;
+  isFeatured: boolean;
+}
+
+export interface Message {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+  sender?: { id: string; fullName: string; avatar?: string };
+  receiver?: { id: string; fullName: string; avatar?: string };
+  counterpart?: { id: string; fullName: string; avatar?: string };
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  body?: string;
+  type: string;
+  isRead: boolean;
+  link?: string;
+  createdAt: string;
 }
 
 export interface Faq {
@@ -153,27 +167,14 @@ export interface Faq {
   sortOrder: number;
 }
 
-export interface Notification {
+export interface GalleryAlbum {
   id: string;
-  type: string;
   title: string;
-  body: string;
-  data?: Record<string, unknown>;
-  isRead: boolean;
-  readAt?: string;
-  createdAt: string;
-}
-
-export interface Message {
-  id: string;
-  senderId: string;
-  receiverId: string;
-  content: string;
-  attachments?: unknown[];
-  isRead: boolean;
-  readAt?: string;
-  createdAt: string;
-  sender?: { id: string; fullName: string; avatar?: string };
-  receiver?: { id: string; fullName: string; avatar?: string };
-  counterpart?: { id: string; fullName: string; avatar?: string };
+  slug: string;
+  description?: string;
+  coverImage?: string;
+  category?: string;
+  isFeatured: boolean;
+  media?: Media[];
+  _count?: { media: number };
 }

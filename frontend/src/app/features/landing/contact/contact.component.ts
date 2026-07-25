@@ -98,7 +98,7 @@ import { ApiService } from '../../../core/services/api.service';
             <div class="mt-8 p-5 rounded-2xl bg-gradient-to-br from-primary to-dark text-white">
               <h3 class="font-semibold text-lg mb-2">Need immediate help?</h3>
               <p class="text-white/70 text-sm mb-4">Our team is available 7 days a week for urgent event inquiries.</p>
-              <a href="tel:+251911234567" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-dark font-semibold text-sm">
+              <a [href]="'tel:' + getPhoneNumber()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-dark font-semibold text-sm">
                 <span class="material-icons text-sm">call</span> Call Now
               </a>
             </div>
@@ -153,6 +153,11 @@ export class ContactComponent {
       error: () => {} // fallback to default
     });
   }
+  getPhoneNumber(): string {
+    const item = this.contactInfo().find(i => i.key === 'site.phone');
+    return item ? item.value.replace(/\s+/g, '') : '+251911234567';
+  }
+
   onSubmit(): void {
     if (this.form.invalid) return;
     this.loading.set(true);

@@ -39,4 +39,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       }
     }
   }
+
+  activeWhere<T extends Record<string, any>>(where?: T): T {
+    return ({
+      ...(where || {}),
+      deletedAt: null,
+    } as unknown) as T;
+  }
 }

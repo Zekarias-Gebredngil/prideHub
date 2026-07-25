@@ -22,19 +22,21 @@ import { Venue } from '../../../core/models/content.model';
     <section class="section bg-white">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Filters -->
-        <div class="flex flex-wrap gap-3 mb-8 items-center">
-          <div class="relative flex-1 min-w-48 max-w-xs">
+        <div class="space-y-3 mb-8">
+          <div class="relative w-full max-w-sm">
             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 material-icons text-gray-400 text-base">search</span>
-            <input [(ngModel)]="search" (ngModelChange)="load()" type="text" placeholder="Search venues..."
+            <input [(ngModel)]="search" (ngModelChange)="load()" type="text" placeholder="Search venues by name or location..."
                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-primary text-sm">
           </div>
-          @for (city of cities; track city) {
-            <button (click)="selectedCity.set(city); load()"
-                    class="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                    [class]="selectedCity() === city ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">
-              {{ city || 'All Cities' }}
-            </button>
-          }
+          <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            @for (city of cities; track city) {
+              <button (click)="selectedCity.set(city); load()"
+                      class="px-4 py-2 rounded-xl text-sm font-medium transition-colors shrink-0 whitespace-nowrap"
+                      [class]="selectedCity() === city ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/80 hover:bg-gray-200'">
+                {{ city || 'All Cities' }}
+              </button>
+            }
+          </div>
         </div>
 
         @if (loading()) {

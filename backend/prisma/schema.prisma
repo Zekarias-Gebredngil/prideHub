@@ -453,6 +453,7 @@ model VendorProfile {
   wallet          VendorWallet?
   commissionOverride CommissionRule? @relation("VendorCommissionOverride")
   services        Service[]
+  venues          Venue[]
 
   @@index([categoryId])
   @@index([isVerified, isFeatured])
@@ -520,7 +521,8 @@ model Service {
   media         Media[]
   bookingItems  BookingItem[]
 
-  @@index([categoryId])
+  @@index([categoryId, isActive])
+  @@index([vendorId, deletedAt])
   @@index([isFeatured, isActive])
   @@map("services")
 }
@@ -587,6 +589,7 @@ model Venue {
   id            String    @id @default(uuid()) @db.Uuid
   name          String    @db.VarChar(255)
   slug          String    @unique @db.VarChar(280)
+  vendorId      String?   @db.Uuid
   description   String?   @db.Text
   shortDesc     String?   @db.VarChar(500)
   address       String?   @db.Text
@@ -595,6 +598,7 @@ model Venue {
   latitude      Decimal?  @db.Decimal(10, 7)
   longitude     Decimal?  @db.Decimal(10, 7)
   googleMapsUrl String?   @db.VarChar(500)
+  contactPhone  String?   @db.VarChar(30)
   capacity      Int?
   minCapacity   Int?
   pricePerDay   Decimal?  @db.Decimal(12, 2)
@@ -611,13 +615,16 @@ model Venue {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
 
+  vendor        VendorProfile? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   availability  VenueAvailability[]
   reviews       Review[]
   bookings      Booking[]
   media         Media[]
 
+  @@index([vendorId])
   @@index([isFeatured, isActive])
-  @@index([city])
+  @@index([city, isActive])
+  @@index([city, pricePerDay])
   @@map("venues")
 }
 
@@ -1782,4 +1789,18 @@ model TaxConfiguration {
   @@map("tax_configurations")
 }
 
-// ─── Payment model extension (add commission relation) ────────────────────────
+// ─── Custom Roles & Permissions ─────────────────────────────────────────────
+
+model CustomRole {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  code        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  isSystem    Boolean  @default(false)
+  permissions String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("custom_roles")
+}
+

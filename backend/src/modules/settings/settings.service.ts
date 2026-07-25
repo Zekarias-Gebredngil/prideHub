@@ -40,10 +40,13 @@ export class SettingsService implements OnModuleInit {
 
   async onModuleInit() {
     const defaults = [
-      { key: 'contact.email', value: 'contact@pridehub.com', group: 'contact', isPublic: true },
-      { key: 'contact.phone', value: '+251 911 234 567', group: 'contact', isPublic: true },
-      { key: 'contact.address', value: 'Bole Road, Addis Ababa, Ethiopia', group: 'contact', isPublic: true },
-      { key: 'contact.officeHours', value: 'Mon–Sat, 8am–6pm', group: 'contact', isPublic: true },
+      { key: 'system.logo', value: 'assets/images/prideHub logo.png', group: 'branding', description: 'System logo image URL', isPublic: true },
+      { key: 'system.name', value: 'PrideHub', group: 'branding', description: 'Platform brand name', isPublic: true },
+      { key: 'system.tagline', value: 'Where Every Celebration Comes to Life', group: 'branding', description: 'Platform tagline', isPublic: true },
+      { key: 'contact.email', value: 'contact@pridehub.com', group: 'contact', description: 'Public contact email', isPublic: true },
+      { key: 'contact.phone', value: '+251 911 234 567', group: 'contact', description: 'Public contact phone', isPublic: true },
+      { key: 'contact.address', value: 'Bole Road, Addis Ababa, Ethiopia', group: 'contact', description: 'Office address', isPublic: true },
+      { key: 'contact.officeHours', value: 'Mon–Sat, 8am–6pm', group: 'contact', description: 'Office operating hours', isPublic: true },
     ];
     let seeded = 0;
     for (const def of defaults) {
@@ -62,6 +65,12 @@ export class SettingsService implements OnModuleInit {
 
   async getPublic() {
     return this.prisma.systemSetting.findMany({ where: { isPublic: true } });
+  }
+
+  async getAllSettings() {
+    return this.prisma.systemSetting.findMany({
+      orderBy: [{ group: 'asc' }, { key: 'asc' }],
+    });
   }
 
   async getByGroup(group: string) {

@@ -108,6 +108,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(`user:${userId}`).emit('notification:new', notification);
   }
 
+  @SubscribeMessage('presence:get')
+  handleGetPresence(@MessageBody() data: { userId: string }, @ConnectedSocket() client: Socket) {
+    const isOnline = this.connectedUsers.has(data.userId);
+    client.emit('presence:res', { userId: data.userId, isOnline });
+  }
+
   getOnlineUsers(): string[] {
     return Array.from(this.connectedUsers.keys());
   }

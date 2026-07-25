@@ -27,4 +27,4 @@ RUN mkdir -p uploads && chown -R node:node /app
 EXPOSE 3000
 USER node
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node /app/dist/main.js"]

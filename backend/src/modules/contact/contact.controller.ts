@@ -8,6 +8,34 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { UserRole } from '@prisma/client';
 
+import { IsString, IsEmail, IsOptional, IsUUID, MaxLength } from 'class-validator';
+
+export class CreateContactDto {
+  @IsString()
+  @MaxLength(255)
+  name!: string;
+
+  @IsEmail()
+  @MaxLength(255)
+  email!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phone?: string;
+
+  @IsString()
+  @MaxLength(500)
+  subject!: string;
+
+  @IsString()
+  message!: string;
+
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
+}
+
 @ApiTags('Contact')
 @Controller('contact')
 export class ContactController {
@@ -15,7 +43,7 @@ export class ContactController {
 
   @Public()
   @Post()
-  submit(@Body() dto: any) { return this.contactService.submit(dto); }
+  submit(@Body() dto: CreateContactDto) { return this.contactService.submit(dto); }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)

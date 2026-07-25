@@ -43,24 +43,30 @@ import { ApiService } from '../../../core/services/api.service';
 
       <!-- Settings -->
       @if (settings()) {
-        <div class="bg-white dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10 p-5 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-dark dark:text-white">Global Settings</h2>
+        <div class="bg-white dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10 p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-semibold text-dark dark:text-white">Global Commission Settings</h2>
+              <p class="text-xs text-green-600 dark:text-green-400 mt-0.5 flex items-center gap-1 font-medium">
+                <span class="material-icons text-sm">verified</span> Platform is 100% free for clients. Commission is deducted from profit earners.
+              </p>
+            </div>
             <button (click)="saveSettings()" [disabled]="savingSettings()"
-                    class="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-900 disabled:opacity-50">
+                    class="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-900 disabled:opacity-50 transition-colors">
               {{ savingSettings() ? 'Saving...' : 'Save Settings' }}
             </button>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <label class="space-y-1">
-              <span class="text-xs font-medium text-gray-500 dark:text-white/50">Default Commission Rate (%)</span>
+              <span class="text-xs font-medium text-gray-500 dark:text-white/50">Default Profit Earner Commission (%)</span>
               <input type="number" [(ngModel)]="settingsForm.globalDefaultRate" min="0" max="100" step="0.1"
                      class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm text-dark dark:text-white focus:outline-none focus:border-primary">
             </label>
             <label class="space-y-1">
-              <span class="text-xs font-medium text-gray-500 dark:text-white/50">Platform Fee Rate (%)</span>
-              <input type="number" [(ngModel)]="settingsForm.platformFeeRate" min="0" max="100" step="0.1"
-                     class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm text-dark dark:text-white focus:outline-none focus:border-primary">
+              <span class="text-xs font-medium text-gray-500 dark:text-white/50">Client Service Fee Rate (%)</span>
+              <input type="number" [(ngModel)]="settingsForm.platformFeeRate" min="0" max="0" readonly
+                     class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/10 text-sm text-gray-400 cursor-not-allowed">
+              <span class="text-[11px] text-gray-400">Locked at 0.0% (Free for Clients)</span>
             </label>
             <label class="space-y-1">
               <span class="text-xs font-medium text-gray-500 dark:text-white/50">Escrow Hold Days</span>
@@ -114,7 +120,7 @@ import { ApiService } from '../../../core/services/api.service';
               </select>
             </label>
             <label class="space-y-1">
-              <span class="text-xs font-medium text-gray-500 dark:text-white/50">Priority (higher = applied first)</span>
+              <span class="text-xs font-medium text-gray-500 dark:text-white/50">Priority (higher = evaluated first)</span>
               <input [(ngModel)]="newRule.priority" type="number" min="0"
                      class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:border-primary text-dark dark:text-white">
             </label>
@@ -132,7 +138,10 @@ import { ApiService } from '../../../core/services/api.service';
       <!-- Rules List -->
       <div class="bg-white dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden">
         <div class="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/10">
-          <h2 class="font-semibold text-dark dark:text-white">Commission Rules</h2>
+          <div>
+            <h2 class="font-semibold text-dark dark:text-white">Rule Priority Hierarchy</h2>
+            <p class="text-xs text-gray-400">Rules are evaluated strictly by priority score</p>
+          </div>
           <button (click)="showCreate.set(true)" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-900">
             <span class="material-icons text-base">add</span> New Rule
           </button>
@@ -140,34 +149,38 @@ import { ApiService } from '../../../core/services/api.service';
         @if (loading()) {
           <div class="p-8 text-center text-gray-400">Loading rules...</div>
         } @else if (!rules().length) {
-          <div class="p-8 text-center text-gray-400">No commission rules configured.</div>
+          <div class="p-8 text-center text-gray-400">No commission rules configured. Global default rate applies.</div>
         } @else {
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="bg-gray-50 dark:bg-white/5 text-xs uppercase text-gray-400">
                 <tr>
+                  <th class="text-left px-4 py-3 font-semibold">Priority</th>
                   <th class="text-left px-4 py-3 font-semibold">Name</th>
                   <th class="text-left px-4 py-3 font-semibold">Type</th>
                   <th class="text-left px-4 py-3 font-semibold">Rate</th>
                   <th class="text-left px-4 py-3 font-semibold">Tier</th>
-                  <th class="text-left px-4 py-3 font-semibold">Priority</th>
                   <th class="text-left px-4 py-3 font-semibold">Status</th>
                   <th class="text-right px-4 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-50 dark:divide-white/5">
-                @for (rule of rules(); track rule.id) {
+                @for (rule of rules(); track rule.id; let idx = $index) {
                   <tr class="hover:bg-gray-50 dark:hover:bg-white/5">
+                    <td class="px-4 py-3">
+                      <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-primary/10 text-primary">
+                        Priority #{{ rule.priority }}
+                      </span>
+                    </td>
                     <td class="px-4 py-3 font-medium text-dark dark:text-white">{{ rule.name }}</td>
                     <td class="px-4 py-3 text-gray-500">{{ rule.type }}</td>
-                    <td class="px-4 py-3 text-gray-700 dark:text-white/70">
+                    <td class="px-4 py-3 font-semibold text-dark dark:text-white">
                       {{ rule.rate ? (rule.rate * 100 | number:'1.1-1') + '%' : (rule.fixedAmount | number) + ' ETB' }}
                     </td>
                     <td class="px-4 py-3 text-gray-500">{{ rule.subscriptionTier || '—' }}</td>
-                    <td class="px-4 py-3 text-gray-500">{{ rule.priority }}</td>
                     <td class="px-4 py-3">
-                      <span class="px-2 py-0.5 rounded-full text-xs font-semibold"
-                            [class]="rule.isEnabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'">
+                      <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                            [class]="rule.isEnabled ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500'">
                         {{ rule.isEnabled ? 'Active' : 'Disabled' }}
                       </span>
                     </td>
@@ -256,7 +269,7 @@ export class AdminCommissionComponent implements OnInit {
     this.savingSettings.set(true);
     const body = {
       globalDefaultRate: this.settingsForm.globalDefaultRate / 100,
-      platformFeeRate: this.settingsForm.platformFeeRate / 100,
+      platformFeeRate: 0,
       escrowHoldDays: +this.settingsForm.escrowHoldDays,
     };
     this.api.patch<any>('commission/settings', body).subscribe({

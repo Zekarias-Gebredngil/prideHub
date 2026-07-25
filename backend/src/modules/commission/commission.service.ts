@@ -148,7 +148,7 @@ export class CommissionService implements OnModuleInit {
     const settings = await this.getSettings();
     const now = new Date();
 
-    const platformFeeRate = Number(settings?.platformFeeRate ?? 0.03);
+    const platformFeeRate = 0; // Platform is 100% free for clients
     let commissionRate = Number(settings?.globalDefaultRate ?? 0.10);
     let appliedRuleId: string | undefined;
     let appliedRuleName = 'Global Default';
@@ -182,6 +182,7 @@ export class CommissionService implements OnModuleInit {
         status: 'ACTIVE',
         effectiveFrom: { lte: now },
         OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
+        AND: [{ OR: orConditions }],
       },
       orderBy: { priority: 'desc' },
     });
@@ -195,9 +196,9 @@ export class CommissionService implements OnModuleInit {
     }
 
     const commissionAmount = Math.round(amount * commissionRate * 100) / 100;
-    const platformFeeAmount = Math.round(amount * platformFeeRate * 100) / 100;
+    const platformFeeAmount = 0; // Free for clients
     const taxAmount = 0; // Tax configured separately via TaxConfiguration
-    const vendorNetPayout = amount - commissionAmount - platformFeeAmount - taxAmount;
+    const vendorNetPayout = Math.max(0, Math.round((amount - commissionAmount - taxAmount) * 100) / 100);
 
     return {
       grossAmount: amount,
@@ -206,7 +207,7 @@ export class CommissionService implements OnModuleInit {
       platformFeeRate,
       platformFeeAmount,
       taxAmount,
-      vendorNetPayout: Math.max(0, vendorNetPayout),
+      vendorNetPayout,
       appliedRuleId,
       appliedRuleName,
       breakdown: {
@@ -214,7 +215,7 @@ export class CommissionService implements OnModuleInit {
         commission: commissionAmount,
         platformFee: platformFeeAmount,
         tax: taxAmount,
-        net: Math.max(0, vendorNetPayout),
+        net: vendorNetPayout,
       },
     };
   }
@@ -266,19 +267,21 @@ export class CommissionService implements OnModuleInit {
     if (!booking) throw new NotFoundException('Booking not found');
 
     const categoryId = booking.items[0]?.vendor?.categoryId;
-    const calculation = await this.calculateCommission(paidAmount, vendorId, categoryId ?? undefined);
+    const targetVendorId = vendorId ?? booking.items.find((i) => i.vendorId)?.vendorId ?? booking.assignedTo ?? 'platform-managed';
+
+    const calculation = await this.calculateCommission(paidAmount, targetVendorId, categoryId ?? undefined);
 
     // Create commission transaction (idempotent)
     const existing = await this.prisma.commissionTransaction.findFirst({
-      where: { paymentId, bookingId },
+      where: { paymentId, bookingId, vendorId: targetVendorId },
     });
-    if (existing) return existing;
+    if (existing) return { commissionTx: existing, calculation };
 
     const commissionTx = await this.prisma.commissionTransaction.create({
       data: {
         bookingId,
         paymentId,
-        vendorId: vendorId ?? booking.items[0]?.vendorId ?? '',
+        vendorId: targetVendorId,
         ruleId: calculation.appliedRuleId,
         grossAmount: calculation.grossAmount,
         commissionRate: calculation.commissionRate,
@@ -298,22 +301,22 @@ export class CommissionService implements OnModuleInit {
       accountId: bookingId,
       referenceId: paymentId,
       referenceType: 'payment',
-      creditAmount: calculation.commissionAmount + calculation.platformFeeAmount,
+      creditAmount: calculation.commissionAmount,
       debitAmount: 0,
-      balance: calculation.commissionAmount + calculation.platformFeeAmount,
-      description: `Commission + platform fee for booking ${bookingId}. Rule: ${calculation.appliedRuleName}`,
+      balance: calculation.commissionAmount,
+      description: `Commission for booking ${bookingId} paid by profit earner. Rule: ${calculation.appliedRuleName}`,
     });
 
     await this.createLedgerEntry({
       entryType: LedgerEntryType.ESCROW_HELD,
       accountType: LedgerAccountType.VENDOR,
-      accountId: vendorId ?? 'unknown',
+      accountId: targetVendorId,
       referenceId: bookingId,
       referenceType: 'booking',
       creditAmount: calculation.vendorNetPayout,
       debitAmount: 0,
       balance: calculation.vendorNetPayout,
-      description: `Vendor net payout held in escrow for booking ${bookingId}`,
+      description: `Net payout held in escrow for booking ${bookingId}`,
     });
 
     // Record platform revenue
@@ -324,16 +327,6 @@ export class CommissionService implements OnModuleInit {
         sourceType: 'payment',
         amount: calculation.commissionAmount,
         description: `Commission from booking ${bookingId}`,
-      },
-    });
-
-    await this.prisma.platformRevenue.create({
-      data: {
-        category: 'PLATFORM_FEE',
-        sourceId: paymentId,
-        sourceType: 'payment',
-        amount: calculation.platformFeeAmount,
-        description: `Platform fee from booking ${bookingId}`,
       },
     });
 

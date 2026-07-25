@@ -1,13 +1,14 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/services/api.service';
 import { StarRatingComponent } from '../../../../shared/components/star-rating/star-rating.component';
 
 @Component({
   selector: 'app-vendor-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, StarRatingComponent],
+  imports: [CommonModule, RouterLink, FormsModule, StarRatingComponent],
   template: `
     @if (loading()) {
       <div class="min-h-screen flex items-center justify-center">
@@ -107,10 +108,14 @@ import { StarRatingComponent } from '../../../../shared/components/star-rating/s
                    class="block w-full text-center py-4 rounded-xl bg-primary text-white font-semibold hover:bg-primary-900 transition-colors mb-3">
                   Book This Vendor
                 </a>
-                <a routerLink="/dashboard/messages"
-                   class="block w-full text-center py-3 rounded-xl border border-gray-200 text-gray-600 text-sm hover:border-primary hover:text-primary transition-colors">
-                  Send Message
+                <a routerLink="/dashboard/messages" [queryParams]="{ receiverId: vendor().userId || vendor().user?.id }"
+                   class="block w-full text-center py-3 rounded-xl border border-primary text-primary font-medium text-sm hover:bg-primary hover:text-white transition-colors mb-3">
+                  <span class="material-icons text-base align-middle mr-1">chat</span> Send Message
                 </a>
+                <button (click)="openReachOutModal()"
+                        class="w-full py-3 rounded-xl border border-gray-200 text-gray-700 text-sm hover:border-secondary hover:text-dark transition-colors font-medium">
+                  <span class="material-icons text-base align-middle mr-1">contact_mail</span> Reach Out / Inquire
+                </button>
                 @if (vendor().website) {
                   <a [href]="vendor().website" target="_blank" class="flex items-center justify-center gap-2 mt-3 text-primary text-sm hover:underline">
                     <span class="material-icons text-sm">language</span> Visit Website
@@ -120,6 +125,39 @@ import { StarRatingComponent } from '../../../../shared/components/star-rating/s
             </div>
           </div>
         </div>
+
+        <!-- Reach Out Modal -->
+        @if (showReachOutModal()) {
+          <div class="fixed inset-0 bg-dark/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+              <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 class="font-display font-bold text-lg text-dark">Reach Out to {{ vendor().businessName }}</h3>
+                <button (click)="showReachOutModal.set(false)" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+                  <span class="material-icons">close</span>
+                </button>
+              </div>
+              @if (reachOutSuccess()) {
+                <div class="p-4 rounded-xl bg-green-50 text-green-800 text-sm text-center">
+                  <span class="material-icons text-3xl text-green-500 block mb-1">check_circle</span>
+                  Your inquiry message has been sent successfully!
+                </div>
+              } @else {
+                <div class="space-y-3">
+                  <p class="text-sm text-gray-500">Send a direct inquiry message to {{ vendor().businessName }}:</p>
+                  <textarea [(ngModel)]="reachOutMessage" rows="4" placeholder="Hi, I'm interested in your event services for my upcoming celebration..."
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-primary resize-none"></textarea>
+                  <div class="flex justify-end gap-3 pt-2">
+                    <button (click)="showReachOutModal.set(false)" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm">Cancel</button>
+                    <button (click)="sendReachOutInquiry()" [disabled]="!reachOutMessage.trim() || sendingReachOut()"
+                            class="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-900 disabled:opacity-50">
+                      {{ sendingReachOut() ? 'Sending...' : 'Send Inquiry' }}
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
       </div>
     }
   `,
@@ -129,12 +167,39 @@ export class VendorDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   readonly vendor = signal<any>(null);
   readonly loading = signal(true);
+  readonly showReachOutModal = signal(false);
+  readonly sendingReachOut = signal(false);
+  readonly reachOutSuccess = signal(false);
+  reachOutMessage = '';
 
   ngOnInit() {
     const slug = this.route.snapshot.paramMap.get('slug')!;
     this.api.get<any>(`vendors/${slug}`).subscribe({
       next: (v) => { this.vendor.set(v); this.loading.set(false); },
       error: () => this.loading.set(false),
+    });
+  }
+
+  openReachOutModal() {
+    this.reachOutMessage = '';
+    this.reachOutSuccess.set(false);
+    this.showReachOutModal.set(true);
+  }
+
+  sendReachOutInquiry() {
+    const targetUserId = this.vendor()?.userId || this.vendor()?.user?.id;
+    if (!targetUserId || !this.reachOutMessage.trim()) return;
+    this.sendingReachOut.set(true);
+    this.api.post('messages', { receiverId: targetUserId, content: this.reachOutMessage.trim() }).subscribe({
+      next: () => {
+        this.sendingReachOut.set(false);
+        this.reachOutSuccess.set(true);
+        setTimeout(() => this.showReachOutModal.set(false), 2000);
+      },
+      error: () => {
+        this.sendingReachOut.set(false);
+        alert('Could not send inquiry. Please log in or try again.');
+      },
     });
   }
 }

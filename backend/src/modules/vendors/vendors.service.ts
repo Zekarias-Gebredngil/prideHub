@@ -186,11 +186,37 @@ export class VendorsService implements OnModuleInit {
   }
 
   async findMe(userId: string) {
-    const profile = await this.prisma.vendorProfile.findUnique({
+    let profile = await this.prisma.vendorProfile.findUnique({
       where: { userId },
       include: { category: true }
     });
-    if (!profile) throw new NotFoundException('Vendor profile not found');
+    if (!profile) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (user) {
+        let firstCategory = await this.prisma.vendorCategory.findFirst();
+        if (!firstCategory) {
+          firstCategory = await this.prisma.vendorCategory.create({
+            data: { name: 'General Services', slug: 'general-services' }
+          });
+        }
+        profile = await this.prisma.vendorProfile.create({
+          data: {
+            userId,
+            businessName: user.fullName || 'My Business',
+            slug: this.makeSlug(user.fullName || 'vendor-' + userId.substring(0, 6)),
+            categoryId: firstCategory.id,
+          },
+          include: { category: true },
+        });
+        await this.prisma.vendorWallet.upsert({
+          where: { vendorId: profile.id },
+          create: { vendorId: profile.id },
+          update: {},
+        });
+      } else {
+        throw new NotFoundException('Vendor profile not found');
+      }
+    }
     return profile;
   }
 

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ImageUploaderComponent } from '../../shared/components/image-uploader/image-uploader.component';
 
 interface Category {
   id: string;
@@ -13,7 +14,7 @@ interface Category {
 @Component({
   selector: 'app-vendor-setup',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ImageUploaderComponent],
   template: `
     <div class="min-h-screen bg-gray-50 dark:bg-dark py-12 px-4 sm:px-6 lg:px-8">
       <div class="max-w-3xl mx-auto">
@@ -145,6 +146,25 @@ interface Category {
               </div>
             </div>
 
+            <!-- Section 4: Media & Branding -->
+            <div class="space-y-6">
+              <h3 class="text-lg font-semibold text-dark dark:text-white pb-2 border-b border-gray-100 dark:border-white/10">Branding & Media</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <app-image-uploader [imageUrl]="form.get('logo')?.value || ''"
+                                     (imageUrlChange)="form.get('logo')?.setValue($event)"
+                                     label="Business Logo"
+                                     hint="Upload brand logo file" />
+                </div>
+                <div>
+                  <app-image-uploader [imageUrl]="form.get('coverImage')?.value || ''"
+                                     (imageUrlChange)="form.get('coverImage')?.setValue($event)"
+                                     label="Cover Image Banner"
+                                     hint="Upload store banner photo" />
+                </div>
+              </div>
+            </div>
+
             <!-- Submit Buttons -->
             <div class="pt-4 flex items-center justify-end gap-4 border-t border-gray-100 dark:border-white/10">
               <button type="button" (click)="cancel()"
@@ -191,6 +211,8 @@ export class VendorSetupComponent implements OnInit {
     website: [''],
     basePrice: [null],
     priceUnit: [''],
+    logo: [''],
+    coverImage: [''],
   });
 
   ngOnInit() {

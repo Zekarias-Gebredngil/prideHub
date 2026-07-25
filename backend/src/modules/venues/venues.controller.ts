@@ -6,12 +6,17 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { PrismaService } from '../../prisma/prisma.service';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Venues')
 @Controller('venues')
 export class VenuesController {
-  constructor(private readonly venuesService: VenuesService) {}
+  constructor(
+    private readonly venuesService: VenuesService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Public() @Get()
   @ApiOperation({ summary: 'Get all venues' })
@@ -35,13 +40,20 @@ export class VenuesController {
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.VENDOR, UserRole.EVENT_PLANNER)
   @Post()
-  create(@Body() dto: CreateVenueDto) { return this.venuesService.create(dto); }
+  async create(@Body() dto: CreateVenueDto, @CurrentUser() user: any) {
+    // Auto-resolve vendorId from current user's vendor profile
+    if (!dto.vendorId && user?.sub) {
+      const profile = await this.prisma.vendorProfile.findUnique({ where: { userId: user.sub } });
+      if (profile) dto.vendorId = profile.id;
+    }
+    return this.venuesService.create(dto);
+  }
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.VENDOR, UserRole.EVENT_PLANNER)
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateVenueDto) {
     return this.venuesService.update(id, dto);
@@ -49,7 +61,7 @@ export class VenuesController {
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.VENDOR, UserRole.EVENT_PLANNER)
   @Delete(':id')
   remove(@Param('id') id: string) { return this.venuesService.softDelete(id); }
 }

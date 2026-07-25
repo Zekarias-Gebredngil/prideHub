@@ -82,8 +82,9 @@ export const routes: Routes = [
       { path: 'profile', loadComponent: () => import('./features/dashboard/profile/profile.component').then(m => m.ProfileComponent) },
       { path: 'settings', loadComponent: () => import('./features/dashboard/settings/settings.component').then(m => m.SettingsComponent) },
       { path: 'security', loadComponent: () => import('./features/dashboard/security/security.component').then(m => m.SecurityComponent) },
-      // Vendor-specific (to be expanded)
+      // Vendor-specific
       { path: 'services', loadComponent: () => import('./features/vendor-dashboard/services/vendor-services.component').then(m => m.VendorServicesComponent) },
+      { path: 'venues', loadComponent: () => import('./features/vendor-dashboard/venues/vendor-venues.component').then(m => m.VendorVenuesComponent) },
       { path: 'analytics', loadComponent: () => import('./features/vendor-dashboard/overview/vendor-overview.component').then(m => m.VendorOverviewComponent) },
       { path: 'reviews', loadComponent: () => import('./features/vendor-dashboard/reviews/vendor-reviews.component').then(m => m.VendorReviewsComponent) },
     ],
@@ -132,6 +133,7 @@ export const routes: Routes = [
       { path: 'testimonials', loadComponent: () => import('./features/admin/testimonials/admin-testimonials.component').then(m => m.AdminTestimonialsComponent) },
       { path: 'reports', loadComponent: () => import('./features/admin/reports/admin-reports.component').then(m => m.AdminReportsComponent) },
       { path: 'crm', loadComponent: () => import('./features/admin/crm/admin-crm.component').then(m => m.AdminCrmComponent) },
+      { path: 'roles', loadComponent: () => import('./features/admin/roles/admin-roles.component').then(m => m.AdminRolesComponent) },
       { path: 'settings', loadComponent: () => import('./features/admin/settings/admin-settings.component').then(m => m.AdminSettingsComponent) },
       { path: 'commission', loadComponent: () => import('./features/admin/commission/admin-commission.component').then(m => m.AdminCommissionComponent) },
       { path: 'settlement', loadComponent: () => import('./features/admin/settlement/admin-settlement.component').then(m => m.AdminSettlementComponent) },
