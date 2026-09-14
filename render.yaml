@@ -1,5 +1,5 @@
 # ==============================================================================
-# PrideHub - Render Blueprint Specification (Infrastructure as Code)
+# PrideHub - Render Blueprint Specification (100% FREE Tier)
 # Docs: https://render.com/docs/blueprint-spec
 # ==============================================================================
 
@@ -8,7 +8,7 @@ services:
   - type: web
     name: pridehub-backend
     runtime: node
-    plan: starter # or free / standard
+    plan: free # 100% Free Tier (512MB RAM, 0.1 CPU)
     region: oregon # or frankfurt, ohio, singapore
     rootDir: backend
     buildCommand: npm ci --legacy-peer-deps && npx prisma generate && npm run build
@@ -29,10 +29,7 @@ services:
           name: pridehub-postgres
           property: connectionString
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: pridehub-redis
-          property: connectionString
+        sync: false # Optional: Paste a free Upstash Redis URL (redis://default:***@***.upstash.io:6379) or leave blank
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -46,7 +43,7 @@ services:
       - key: SWAGGER_ENABLED
         value: "true"
       - key: STORAGE_PROVIDER
-        value: local # Change to 'cloudinary' or 's3' for persistent multi-instance storage
+        value: local # Change to 'cloudinary' or 's3' for persistent cloud storage
       - key: UPLOAD_DIR
         value: ./uploads
       - key: THROTTLE_TTL
@@ -77,18 +74,11 @@ services:
       - key: MAIL_FROM
         value: PrideHub <noreply@pridehub.com>
 
-  # ── Redis Cache / Queue Service ───────────────────────────────────────────
-  - type: redis
-    name: pridehub-redis
-    plan: starter # or free / standard
-    region: oregon
-    ipAllowList: [] # Internal access only
-
   # ── Frontend Static Site (Angular 20 SPA) ──────────────────────────────────
   - type: web
     name: pridehub-frontend
     runtime: static
-    plan: free # or starter
+    plan: free # 100% Free (unlimited bandwidth & build minutes)
     rootDir: frontend
     buildCommand: npm ci && npm run build:prod
     staticPublishPath: ./dist/prideHub/browser
@@ -109,10 +99,10 @@ services:
         name: Cache-Control
         value: public, max-age=31536000, immutable
 
-# ── Managed PostgreSQL Database ──────────────────────────────────────────────
+# ── Managed PostgreSQL Database (Free Tier) ───────────────────────────────────
 databases:
   - name: pridehub-postgres
-    plan: starter # free / starter / standard
+    plan: free # 100% Free Tier (1GB storage, 90-day expiry)
     databaseName: pridehub_db
     user: pridehub
     region: oregon
