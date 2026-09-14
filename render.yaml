@@ -11,7 +11,7 @@ services:
     plan: free # 100% Free Tier (512MB RAM, 0.1 CPU)
     region: oregon # or frankfurt, ohio, singapore
     rootDir: backend
-    buildCommand: npm ci --legacy-peer-deps && npx prisma generate && npm run build
+    buildCommand: npm install --legacy-peer-deps && npx prisma generate && npm run build
     startCommand: npx prisma db push --accept-data-loss && node dist/main.js
     healthCheckPath: /api/v1
     autoDeploy: true
@@ -79,7 +79,7 @@ services:
     name: pridehub-frontend
     runtime: static
     rootDir: frontend
-    buildCommand: npm ci && npm run build:prod
+    buildCommand: npm install && npm run build:prod
     staticPublishPath: ./dist/prideHub/browser
     pullRequestPreviewsEnabled: true
     routes:
