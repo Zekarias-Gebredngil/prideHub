@@ -8,7 +8,7 @@ services:
   - type: web
     name: pridehub-backend
     runtime: node
-    plan: starter # or standard for higher concurrency & memory
+    plan: starter # or free / standard
     region: oregon # or frankfurt, ohio, singapore
     rootDir: backend
     buildCommand: npm ci --legacy-peer-deps && npx prisma generate && npm run build
@@ -30,7 +30,7 @@ services:
           property: connectionString
       - key: REDIS_URL
         fromService:
-          type: keyvalue
+          type: redis
           name: pridehub-redis
           property: connectionString
       - key: JWT_SECRET
@@ -77,6 +77,13 @@ services:
       - key: MAIL_FROM
         value: PrideHub <noreply@pridehub.com>
 
+  # ── Redis Cache / Queue Service ───────────────────────────────────────────
+  - type: redis
+    name: pridehub-redis
+    plan: starter # or free / standard
+    region: oregon
+    ipAllowList: [] # Internal access only
+
   # ── Frontend Static Site (Angular 20 SPA) ──────────────────────────────────
   - type: web
     name: pridehub-frontend
@@ -102,16 +109,10 @@ services:
         name: Cache-Control
         value: public, max-age=31536000, immutable
 
-# ── Databases & Key-Value Stores ─────────────────────────────────────────────
+# ── Managed PostgreSQL Database ──────────────────────────────────────────────
 databases:
   - name: pridehub-postgres
-    plan: basic-256mb # or starter / standard
+    plan: starter # free / starter / standard
     databaseName: pridehub_db
     user: pridehub
     region: oregon
-
-keyvalue:
-  - name: pridehub-redis
-    plan: starter # or basic
-    region: oregon
-    ipAllowList: [] # Internal access only
