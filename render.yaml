@@ -78,7 +78,6 @@ services:
   - type: web
     name: pridehub-frontend
     runtime: static
-    plan: free # 100% Free (unlimited bandwidth & build minutes)
     rootDir: frontend
     buildCommand: npm ci && npm run build:prod
     staticPublishPath: ./dist/prideHub/browser
